@@ -1,0 +1,12 @@
+apiVersion: v2
+appVersion: 0.0.0
+description: Keycloak Realm reconciler
+home: https://github.com/DoodleScheduling/k8skeycloak-controller
+keywords:
+- kubernetes-controller
+- http-keycloak
+- request-clone
+name: k8skeycloak-controller
+sources:
+- https://github.com/DoodleScheduling/k8skeycloak-controller
+version: 0.0.0

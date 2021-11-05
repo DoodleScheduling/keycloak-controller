@@ -1,0 +1,45 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "k8skeycloak-controller.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "k8skeycloak-controller.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "k8skeycloak-controller.chart" . }}
+  annotations:
+    {{- toYaml .Values.annotations | nindent 4 }}
+rules:
+{{- if .Values.podSecurityPolicy.enabled }}
+  - apiGroups: ['extensions']
+    resources: ['podsecuritypolicies']
+    verbs:     ['use']
+    resourceNames:
+    - {{ template "k8skeycloak-controller.fullname" . }}
+{{- end }}
+  # leader election
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - create
+      - delete
+      - update
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - delete
+      - get
+  - apiGroups:
+      - "coordination.k8s.io"
+    resources:
+      - leases
+    verbs:
+      - create
+      - delete
+      - update
+      - get

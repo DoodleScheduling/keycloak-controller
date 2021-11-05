@@ -1,0 +1,7 @@
+domain: doodle.com
+repo: github.com/DoodleScheduling/k8skeycloak-controller
+resources:
+- group: keycloak.infra.doodle.com
+  kind: KeycloakRealm
+  version: v1beta1
+version: "2"

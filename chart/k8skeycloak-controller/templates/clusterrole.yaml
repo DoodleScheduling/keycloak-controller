@@ -1,0 +1,54 @@
+{{- if .Values.clusterRBAC.enabled -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "k8skeycloak-controller.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "k8skeycloak-controller.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "k8skeycloak-controller.chart" . }}
+  annotations:
+    {{- toYaml .Values.annotations | nindent 4 }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+    - secrets
+  verbs:
+    - get
+    - list
+    - watch
+- apiGroups:
+  - "keycloak.infra.doodle.com"
+  resources:
+  - keycloakrealms
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - "keycloak.infra.doodle.com"
+  resources:
+  - keycloakrealms/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+{{- end }}
