@@ -76,7 +76,9 @@ jobs:
         run: |
           kubectl -n kube-system describe pods
           kubectl -n k8skeycloak-system describe pods
+          kubectl -n k8skeycloak-system describe keycloakrealm
           kubectl -n k8skeycloak-system get keycloakrealm -oyaml
+          kubectl -n k8skeycloak-system get secrets -o yaml
           kubectl -n k8skeycloak-system get all
           kubectl -n k8skeycloak-system logs deploy/k8skeycloak-controller
           kubectl -n keycloak get all
