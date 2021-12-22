@@ -60,16 +60,16 @@ var (
 )
 
 func main() {
-	flag.StringVar(&metricsAddr, "metrics-addr", ":9556", "The address of the metric endpoint binds to.")
-	flag.StringVar(&probesAddr, "probe-addr", ":9557", "The address of the probe endpoints bind to.")
-	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
+	flag.StringVar(&metricsAddr, "metrics-addr", metricsAddr, "The address of the metric endpoint binds to.")
+	flag.StringVar(&probesAddr, "probe-addr", probesAddr, "The address of the probe endpoints bind to.")
+	flag.BoolVar(&enableLeaderElection, "enable-leader-election", enableLeaderElection,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(&leaderElectionNamespace, "leader-election-namespace", "",
+	flag.StringVar(&leaderElectionNamespace, "leader-election-namespace", leaderElectionNamespace,
 		"Specify a different leader election namespace. It will use the one where the controller is deployed by default.")
-	flag.StringVar(&namespaces, "namespaces", "",
+	flag.StringVar(&namespaces, "namespaces", namespaces,
 		"The controller listens by default for all namespaces. This may be limited to a comma delimted list of dedicated namespaces.")
-	flag.IntVar(&concurrent, "concurrent", 4,
+	flag.IntVar(&concurrent, "concurrent", concurrent,
 		"The number of concurrent reconcile workers. By default this is 4.")
 
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
