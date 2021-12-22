@@ -63,8 +63,8 @@ jobs:
           --namespace keycloak
       - name: Run keycloakrealm tests
         run: |
-          kubectl -n default apply -f ./config/testdata
-          kubectl -n default wait keycloakrealm/test --for=condition=Ready --timeout=1m
+          kubectl -n k8skeycloak-system apply -f ./config/testdata
+          kubectl -n k8skeycloak-system wait keycloakrealm/test --for=condition=Ready --timeout=1m
           kubectl -n keycloak port-forward svc/keycloak-http 8443:8443 &>/dev/null &
           sleep 2
           curl --fail -k https://localhost:8443/auth/realms/test/.well-known/openid-configuration

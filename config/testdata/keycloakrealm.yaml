@@ -6,7 +6,7 @@ spec:
   address: https://keycloak-iam-http.default:8443/auth
   authSecret:
     name: keycloak-admin
-    namespace: default
+    namespace: k8skeycloak-system
     passwordField: password
     userField: username
   interval: 10m
