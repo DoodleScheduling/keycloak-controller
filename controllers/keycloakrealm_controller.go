@@ -193,7 +193,7 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 
 	msg := fmt.Sprintf("reconcile realm progressing")
 	r.Recorder.Event(&realm, "Normal", "info", msg)
-	realm = v1beta1.KeycloakRealmReady(realm, v1beta1.ProgressingReason, msg)
+	realm = v1beta1.KeycloakRealmNotReady(realm, v1beta1.ProgressingReason, msg)
 	if r.patchStatus(ctx, &realm) != nil {
 		return realm, err
 	}
