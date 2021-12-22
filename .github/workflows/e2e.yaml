@@ -54,11 +54,10 @@ jobs:
         run: make deploy IMG=test/k8skeycloak-controller:latest
       - name: Setup keycloak
         env:
-          VAULT_VER: ${{ '16.0.4' }}
+          KEYCLOAK_VER: ${{ '16.0.4' }}
         run: |
           kubectl create ns keycloak
           helm repo add codecentric https://codecentric.github.io/helm-charts
-          helm repo add hashicorp https://helm.releases.hashicorp.com
           helm upgrade --wait -i keycloak codecentric/keycloak \
           --version $KEYCLOAK_VER \
           --namespace keycloak
