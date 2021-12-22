@@ -7,8 +7,8 @@ spec:
   authSecret:
     name: keycloak-admin
     namespace: default
-    passwordField: ADMIN_PASSWORD
-    userField: ADMIN_USERNAME
+    passwordField: password
+    userField: username
   interval: 10m
   realm:
     accessCodeLifespan: 60
