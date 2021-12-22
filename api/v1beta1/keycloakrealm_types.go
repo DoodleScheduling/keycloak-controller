@@ -74,7 +74,8 @@ type KeycloakRealmStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// LastExececutionOutput is the stdout dump of keycloak-config-cli
-	LastExececutionOutput string `json:"lastExececutionOutput"`
+	// +optional
+	LastExececutionOutput string `json:"lastExececutionOutput,omitempty"`
 }
 
 const (
