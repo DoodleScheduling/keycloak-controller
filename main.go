@@ -51,7 +51,6 @@ func init() {
 }
 
 var (
-	httpAddr                = ":8080"
 	metricsAddr             = ":9556"
 	probesAddr              = ":9557"
 	enableLeaderElection    = false
@@ -63,7 +62,6 @@ var (
 func main() {
 	flag.StringVar(&metricsAddr, "metrics-addr", ":9556", "The address of the metric endpoint binds to.")
 	flag.StringVar(&probesAddr, "probe-addr", ":9557", "The address of the probe endpoints bind to.")
-	flag.StringVar(&httpAddr, "http-addr", ":8080", "The address of http server binding to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
