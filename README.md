@@ -1,5 +1,11 @@
 # k8skeycloak-controller
 
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4787/badge)](https://bestpractices.coreinfrastructure.org/projects/4787)
+[![e2e](https://github.com/DoodleScheduling/k8skeycloak-controller/workflows/e2e/badge.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/actions)
+[![report](https://goreportcard.com/badge/github.com/DoodleScheduling/k8skeycloak-controller)](https://goreportcard.com/report/github.com/DoodleScheduling/k8skeycloak-controller)
+[![license](https://img.shields.io/github/license/DoodleScheduling/k8skeycloak-controller.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/blob/main/LICENSE)
+[![release](https://img.shields.io/github/release/DoodleScheduling/k8skeycloak-controller/all.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/releases)
+
 Reconcile a keycloak realm. Under the hood the controller is a wrapper around [keycloak-config-cli](https://github.com/adorsys/keycloak-config-cli)
 which implements the entire realm update using the Keycloak REST API.
 
