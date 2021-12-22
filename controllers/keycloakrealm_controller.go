@@ -40,8 +40,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/DoodleScheduling/k8skeycloak-controller/api/v1beta1"
 	infrav1beta1 "github.com/DoodleScheduling/k8skeycloak-controller/api/v1beta1"
 )
+
+// +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=keycloakrealms,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=keycloakrealms/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 const (
 	secretIndexKey = ".metadata.secret"
@@ -109,10 +115,7 @@ func (r *KeycloakRealmReconciler) requestsForSecretChange(o client.Object) []rec
 	return reqs
 }
 
-// +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=KeycloakRealms,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=KeycloakRealms/status,verbs=get;update;patch
-
-// Reconcile KeycloakRealms
+// Reconcile keycloakrealms
 func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := r.Log.WithValues("Namespace", req.Namespace, "Name", req.NamespacedName)
 	logger.Info("reconciling KeycloakRealm")
@@ -136,12 +139,14 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	realm, err = r.reconcile(ctx, realm)
+	realm, err = r.reconcile(ctx, realm, logger)
 	res := ctrl.Result{}
 
 	if err != nil {
 		r.Recorder.Event(&realm, "Normal", "error", err.Error())
 		res = ctrl.Result{Requeue: true}
+		msg := "Realm reconciliation not completed"
+		realm = infrav1beta1.KeycloakRealmNotReady(realm, infrav1beta1.FailedReason, msg)
 	} else {
 		if realm.Spec.Interval != nil {
 			res = ctrl.Result{
@@ -152,7 +157,7 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 		msg := "Realm successfully reconciled"
 		r.Recorder.Event(&realm, "Normal", "info", msg)
-		infrav1beta1.KeycloakRealmReady(realm, infrav1beta1.ReadyCondition, msg)
+		realm = infrav1beta1.KeycloakRealmReady(realm, infrav1beta1.SynchronizedReason, msg)
 	}
 
 	// Update status after reconciliation.
@@ -180,9 +185,16 @@ func (r *KeycloakRealmReconciler) locateJARByVersion(version string) (string, er
 	return "", err
 }
 
-func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1beta1.KeycloakRealm) (infrav1beta1.KeycloakRealm, error) {
+func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
 	jar, err := r.locateJARByVersion(realm.Spec.Version)
 	if err != nil {
+		return realm, err
+	}
+
+	msg := fmt.Sprintf("reconcile realm progressing")
+	r.Recorder.Event(&realm, "Normal", "info", msg)
+	realm = v1beta1.KeycloakRealmReady(realm, v1beta1.ProgressingReason, msg)
+	if r.patchStatus(ctx, &realm) != nil {
 		return realm, err
 	}
 
@@ -193,6 +205,7 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 	cmd = append(cmd, fmt.Sprintf("--keycloak.url=%s", realm.Spec.Address))
 	cmd = append(cmd, "--import.path=/dev/stdin")
 	cmd = append(cmd, "--import.file-type=json")
+	logger.Info("CMD OUT", "cmd", cmd)
 
 	if realm.Spec.AuthSecret != nil {
 		usr, pw, err := getSecret(ctx, r.Client, realm.Spec.AuthSecret)

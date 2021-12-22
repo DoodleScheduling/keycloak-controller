@@ -1,26 +1,8 @@
-
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
-  name: manager-role
+  name: keycloakrealm-editor-role
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
 - apiGroups:
   - keycloak.infra.doodle.com
   resources:
@@ -39,5 +21,3 @@ rules:
   - keycloakrealms/status
   verbs:
   - get
-  - patch
-  - update

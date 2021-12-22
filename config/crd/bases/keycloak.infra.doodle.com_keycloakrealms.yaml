@@ -14,7 +14,7 @@ spec:
     listKind: KeycloakRealmList
     plural: keycloakrealms
     shortNames:
-    - rc
+    - realm
     singular: keycloakrealm
   scope: Namespaced
   versions:
@@ -74,6 +74,7 @@ spec:
                 description: Interval reconciliation
                 type: string
               realm:
+                description: Realm is the unstructured keycloak realm representation
                 x-kubernetes-preserve-unknown-fields: true
               suspend:
                 description: Suspend reconciliation
@@ -90,7 +91,7 @@ spec:
             description: KeycloakRealmStatus defines the observed state of KeycloakRealm
             properties:
               conditions:
-                description: Conditions holds the conditions for the VaultBinding.
+                description: Conditions holds the conditions for the KeycloakRealm.
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
@@ -160,6 +161,7 @@ spec:
                   type: object
                 type: array
               lastExececutionOutput:
+                description: LastExececutionOutput is the stdout dump of keycloak-config-cli
                 type: string
             required:
             - lastExececutionOutput

@@ -1,0 +1,82 @@
+name: e2e
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - DK-2954
+
+jobs:
+  kind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.x
+      - name: Restore Go cache
+        uses: actions/cache@v1
+        with:
+          path: /home/runner/work/_temp/_github_home/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Setup Kubernetes
+        uses: engineerd/setup-kind@v0.5.0
+        with:
+          version: v0.11.1
+          image: kindest/node:v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6
+      - name: Setup Kustomize
+        uses: fluxcd/pkg/actions/kustomize@main
+      - name: Setup envtest
+        uses: fluxcd/pkg/actions/envtest@main
+        with:
+          version: "1.19.2"
+      - name: Setup Helm
+        uses: fluxcd/pkg/actions/helm@main
+      - name: Run controller tests
+        run: make test
+      - name: Check if working tree is dirty
+        run: |
+          if [[ $(git diff --stat) != '' ]]; then
+            git --no-pager diff
+            echo 'run make test and commit changes'
+            exit 1
+          fi
+      - name: Build container image1
+        run: make docker-build IMG=test/k8skeycloak-controller:latest BUILD_PLATFORMS=linux/amd64 BUILD_ARGS=--load
+      - name: Load test image
+        run: kind load docker-image test/k8skeycloak-controller:latest
+      - name: Deploy controller
+        run: make deploy IMG=test/k8skeycloak-controller:latest
+      - name: Setup keycloak
+        env:
+          VAULT_VER: ${{ '16.0.4' }}
+        run: |
+          kubectl create ns keycloak
+          helm repo add codecentric https://codecentric.github.io/helm-charts
+          helm repo add hashicorp https://helm.releases.hashicorp.com
+          helm upgrade --wait -i keycloak codecentric/keycloak \
+          --version $KEYCLOAK_VER \
+          --namespace keycloak
+      - name: Run keycloakrealm tests
+        run: |
+          kubectl -n k8skeycloak-system apply -f ./config/testdata
+          kubectl -n k8skeycloak-system wait keycloakrealm/test-realm --for=condition=Ready --timeout=1m
+          #kubectl -n vault exec -ti sts/vault vault -- vault read /secret/example
+      - name: Logs
+        run: |
+          kubectl -n k8skeycloak-system logs deploy/k8skeycloak-controller
+      - name: Debug failure
+        if: failure()
+        run: |
+          kubectl -n kube-system describe pods
+          kubectl -n k8skeycloak-system describe pods
+          kubectl -n k8skeycloak-system get keycloakrealm -oyaml
+          kubectl -n k8skeycloak-system get all
+          kubectl -n k8skeycloak-system logs deploy/k8skeycloak-controller
+          kubectl -n keycloak get all
+          #kubectl -n vault exec -ti sts/vault vault -- vault list /secret/
