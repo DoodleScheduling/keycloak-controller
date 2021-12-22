@@ -47,7 +47,7 @@ spec:
         - secretRef:
             name: {{ .Values.envFromSecret }}
         {{- end }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         args:
         {{- if .Values.extraArgs }}

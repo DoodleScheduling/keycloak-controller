@@ -64,8 +64,9 @@ jobs:
       - name: Run keycloakrealm tests
         run: |
           kubectl -n k8skeycloak-system apply -f ./config/testdata
-          kubectl -n k8skeycloak-system wait keycloakrealm/test-realm --for=condition=Ready --timeout=1m
-          #kubectl -n vault exec -ti sts/vault vault -- vault read /secret/example
+          kubectl -n keycloak port-forward svc/keycloak-http 8443:8443 &>/dev/null &
+          kubectl -n k8skeycloak-system wait keycloakrealm/test --for=condition=Ready --timeout=1m
+          curl --fail -k https://localhost:8443/auth/realms/test/.well-known/openid-configuration
       - name: Logs
         run: |
           kubectl -n k8skeycloak-system logs deploy/k8skeycloak-controller
@@ -78,4 +79,3 @@ jobs:
           kubectl -n k8skeycloak-system get all
           kubectl -n k8skeycloak-system logs deploy/k8skeycloak-controller
           kubectl -n keycloak get all
-          #kubectl -n vault exec -ti sts/vault vault -- vault list /secret/

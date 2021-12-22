@@ -8,8 +8,7 @@ fullnameOverride: ""
 
 image:
   pullPolicy: IfNotPresent
-  repository: nexus.doodle.com:5000/devops/k8skeycloak-controller
-  tag: 0.0.0
+  repository: ghcr.io/doodlescheduling/k8skeycloak-controller
 
 imagePullSecrets: []
 
