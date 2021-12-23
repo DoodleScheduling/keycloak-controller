@@ -34,9 +34,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -62,6 +64,10 @@ type KeycloakRealmReconciler struct {
 	secretRegex *regexp.Regexp
 }
 
+type ReconcileRequestedPredicate struct {
+	predicate.Funcs
+}
+
 type KeycloakRealmReconcilerOptions struct {
 	MaxConcurrentReconciles int
 }
@@ -83,7 +89,9 @@ func (r *KeycloakRealmReconciler) SetupWithManager(mgr ctrl.Manager, maxConcurre
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrav1beta1.KeycloakRealm{}).
+		For(&infrav1beta1.KeycloakRealm{}, builder.WithPredicates(
+			predicate.GenerationChangedPredicate{},
+		)).
 		Watches(
 			&source.Kind{Type: &corev1.Secret{}},
 			handler.EnqueueRequestsFromMapFunc(r.requestsForSecretChange),
@@ -117,7 +125,7 @@ func (r *KeycloakRealmReconciler) requestsForSecretChange(o client.Object) []rec
 
 // Reconcile keycloakrealms
 func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := r.Log.WithValues("Namespace", req.Namespace, "Name", req.NamespacedName)
+	logger := r.Log.WithValues("Namespace", req.Namespace, "Name", req.NamespacedName, "req", req)
 	logger.Info("reconciling KeycloakRealm")
 
 	// Fetch the KeycloakRealm instance
@@ -141,16 +149,15 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	realm, err = r.reconcile(ctx, realm, logger)
 	res := ctrl.Result{}
+	realm.Status.ObservedGeneration = realm.GetGeneration()
 
 	if err != nil {
 		r.Recorder.Event(&realm, "Normal", "error", err.Error())
 		res = ctrl.Result{Requeue: true}
-		msg := "Realm reconciliation not completed"
-		realm = infrav1beta1.KeycloakRealmNotReady(realm, infrav1beta1.FailedReason, msg)
+		realm = infrav1beta1.KeycloakRealmNotReady(realm, infrav1beta1.FailedReason, err.Error())
 	} else {
 		if realm.Spec.Interval != nil {
 			res = ctrl.Result{
-				Requeue:      true,
 				RequeueAfter: realm.Spec.Interval.Duration,
 			}
 		}
@@ -166,7 +173,7 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{Requeue: true}, err
 	}
 
-	return res, nil
+	return res, err
 }
 
 func (r *KeycloakRealmReconciler) locateJARByVersion(version string) (string, error) {
@@ -191,6 +198,14 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 		return realm, err
 	}
 
+	var usr, pw string
+	if realm.Spec.AuthSecret != nil {
+		usr, pw, err = getSecret(ctx, r.Client, realm)
+		if err != nil {
+			return realm, err
+		}
+	}
+
 	msg := fmt.Sprintf("reconcile realm progressing")
 	r.Recorder.Event(&realm, "Normal", "info", msg)
 	realm = v1beta1.KeycloakRealmNotReady(realm, v1beta1.ProgressingReason, msg)
@@ -208,11 +223,6 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 	logger.Info("CMD OUT", "cmd", cmd)
 
 	if realm.Spec.AuthSecret != nil {
-		usr, pw, err := getSecret(ctx, r.Client, realm.Spec.AuthSecret)
-		if err != nil {
-			return realm, err
-		}
-
 		cmd = append(cmd, fmt.Sprintf("--keycloak.user=%s", usr))
 		cmd = append(cmd, fmt.Sprintf("--keycloak.password=%s", pw))
 	}
@@ -277,12 +287,17 @@ func (r *KeycloakRealmReconciler) substituteSecrets(ctx context.Context, realm i
 	return str, nil
 }
 
-func getSecret(ctx context.Context, c client.Client, sec *infrav1beta1.SecretReference) (string, string, error) {
+func getSecret(ctx context.Context, c client.Client, realm v1beta1.KeycloakRealm) (string, string, error) {
+	namespace := realm.Spec.AuthSecret.Namespace
+	if namespace == "" {
+		namespace = realm.GetNamespace()
+	}
+
 	// Fetch referencing root secret
 	secret := &corev1.Secret{}
 	secretName := types.NamespacedName{
-		Namespace: sec.Namespace,
-		Name:      sec.Name,
+		Namespace: namespace,
+		Name:      realm.Spec.AuthSecret.Name,
 	}
 	err := c.Get(ctx, secretName, secret)
 
@@ -291,7 +306,7 @@ func getSecret(ctx context.Context, c client.Client, sec *infrav1beta1.SecretRef
 		return "", "", fmt.Errorf("Referencing secret was not found: %w", err)
 	}
 
-	usr, pw, err := extractCredentials(sec, secret)
+	usr, pw, err := extractCredentials(realm.Spec.AuthSecret, secret)
 	if err != nil {
 		return usr, pw, fmt.Errorf("Credentials field not found in referenced rootSecret: %w", err)
 	}

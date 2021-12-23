@@ -3,14 +3,14 @@ kind: KeycloakRealm
 metadata:
   name: test
 spec:
-  address: https://keycloak-iam-http.default:8443/auth
+  address: http://keycloak-http.k8skeycloak-system/auth
   authSecret:
     name: keycloak-admin
-    namespace: k8skeycloak-system
     passwordField: password
     userField: username
   interval: 10m
   realm:
+    realm: test
     accessCodeLifespan: 60
     accessCodeLifespanLogin: 1800
     accessCodeLifespanUserAction: 300

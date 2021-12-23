@@ -163,6 +163,9 @@ spec:
               lastExececutionOutput:
                 description: LastExececutionOutput is the stdout dump of keycloak-config-cli
                 type: string
+              observedGeneration:
+                format: int64
+                type: integer
             type: object
         type: object
     served: true
