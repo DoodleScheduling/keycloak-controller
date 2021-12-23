@@ -3,7 +3,7 @@ kind: KeycloakRealm
 metadata:
   name: test
 spec:
-  address: http://keycloak-http.k8skeycloak-system/auth
+  address: http://keycloak-http.keycloak/auth
   authSecret:
     name: keycloak-admin
     passwordField: password
