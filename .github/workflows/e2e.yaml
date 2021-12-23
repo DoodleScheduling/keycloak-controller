@@ -58,11 +58,20 @@ jobs:
         run: |
           kubectl create ns keycloak
           helm repo add codecentric https://codecentric.github.io/helm-charts
+
+
+          cat <<EOT >> values.yaml
+          extraEnv: |
+            - name: KEYCLOAK_USER
+              value: admin
+            - name: KEYCLOAK_PASSWORD
+              value: admin
+          EOT
+
           helm upgrade --wait -i keycloak codecentric/keycloak \
           --version $KEYCLOAK_VER \
           --namespace keycloak \
-          --set extraEnv[0].KEYCLOAK_USER=admin \
-          --set extraEnv[1].KEYCLOAK_PASSWORD=admin
+          -f values.yaml
       - name: Run keycloakrealm tests
         run: |
           kubectl -n k8skeycloak-system apply -f ./config/testdata
