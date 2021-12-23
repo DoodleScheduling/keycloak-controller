@@ -61,6 +61,8 @@ jobs:
           helm upgrade --wait -i keycloak codecentric/keycloak \
           --version $KEYCLOAK_VER \
           --namespace keycloak
+          --set extraEnv[0].KEYCLOAK_USER=admin
+          --set extraEnv[1].KEYCLOAK_PASSWORD=admin
       - name: Run keycloakrealm tests
         run: |
           kubectl -n k8skeycloak-system apply -f ./config/testdata
