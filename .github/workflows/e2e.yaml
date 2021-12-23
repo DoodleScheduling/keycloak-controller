@@ -60,8 +60,8 @@ jobs:
           helm repo add codecentric https://codecentric.github.io/helm-charts
           helm upgrade --wait -i keycloak codecentric/keycloak \
           --version $KEYCLOAK_VER \
-          --namespace keycloak
-          --set extraEnv[0].KEYCLOAK_USER=admin
+          --namespace keycloak \
+          --set extraEnv[0].KEYCLOAK_USER=admin \
           --set extraEnv[1].KEYCLOAK_PASSWORD=admin
       - name: Run keycloakrealm tests
         run: |
