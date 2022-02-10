@@ -102,11 +102,11 @@ clusterRBAC:
 # Creates a PodSecurityPolicy and the role/rolebinding
 # allowing the serviceaccount to use it
 podSecurityPolicy:
-  enabled: true
+  enabled: false
 
 # Prometheus operator PodMonitor
 podMonitor:
-  enabled: true
+  enabled: false
   interval: 30s
   scrapeTimeout: 10s
   namespace:
