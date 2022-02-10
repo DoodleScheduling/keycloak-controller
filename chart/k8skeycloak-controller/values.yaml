@@ -29,7 +29,7 @@ secretMounts: []
 #    secretName: secret
 #    path: /secrets
 
-#Add additional containers (sidecars)
+# Add additional containers (sidecars)
 extraContainers:
 
 podAnnotations: {}
