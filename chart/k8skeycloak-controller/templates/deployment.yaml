@@ -54,9 +54,6 @@ spec:
         {{- toYaml .Values.extraArgs | nindent 8 }}
         {{- end }}
         ports:
-        - name: http
-          containerPort: {{ .Values.httpPort }}
-          protocol: TCP
         - name: metrics
           containerPort: {{ .Values.metricsPort }}
           protocol: TCP
