@@ -2,12 +2,6 @@
 
 ## 0.1.0
 
-**Release date:** xxxx-xx-xx
+**Release date:** 2022-02-22
 
-description
-
-Improvements:
-* xxx
-
-Fixes:
-* xxx
+Initial oss release

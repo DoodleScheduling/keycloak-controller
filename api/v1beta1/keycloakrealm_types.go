@@ -73,6 +73,7 @@ type KeycloakRealmStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
+	// ObservedGeneration is the last generation reconciled by the controller
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
 	// LastExececutionOutput is the stdout dump of keycloak-config-cli
