@@ -47,16 +47,13 @@ spec:
         - secretRef:
             name: {{ .Values.envFromSecret }}
         {{- end }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         args:
         {{- if .Values.extraArgs }}
         {{- toYaml .Values.extraArgs | nindent 8 }}
         {{- end }}
         ports:
-        - name: http
-          containerPort: {{ .Values.httpPort }}
-          protocol: TCP
         - name: metrics
           containerPort: {{ .Values.metricsPort }}
           protocol: TCP

@@ -26,7 +26,6 @@ import (
 	"regexp"
 
 	"github.com/go-logr/logr"
-	"github.com/prometheus/common/log"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,14 +33,22 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/DoodleScheduling/k8skeycloak-controller/api/v1beta1"
 	infrav1beta1 "github.com/DoodleScheduling/k8skeycloak-controller/api/v1beta1"
 )
+
+// +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=keycloakrealms,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=keycloakrealms/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 const (
 	secretIndexKey = ".metadata.secret"
@@ -54,6 +61,10 @@ type KeycloakRealmReconciler struct {
 	Scheme      *runtime.Scheme
 	Recorder    record.EventRecorder
 	secretRegex *regexp.Regexp
+}
+
+type ReconcileRequestedPredicate struct {
+	predicate.Funcs
 }
 
 type KeycloakRealmReconcilerOptions struct {
@@ -77,7 +88,9 @@ func (r *KeycloakRealmReconciler) SetupWithManager(mgr ctrl.Manager, maxConcurre
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrav1beta1.KeycloakRealm{}).
+		For(&infrav1beta1.KeycloakRealm{}, builder.WithPredicates(
+			predicate.GenerationChangedPredicate{},
+		)).
 		Watches(
 			&source.Kind{Type: &corev1.Secret{}},
 			handler.EnqueueRequestsFromMapFunc(r.requestsForSecretChange),
@@ -109,12 +122,9 @@ func (r *KeycloakRealmReconciler) requestsForSecretChange(o client.Object) []rec
 	return reqs
 }
 
-// +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=KeycloakRealms,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=KeycloakRealms/status,verbs=get;update;patch
-
-// Reconcile KeycloakRealms
+// Reconcile keycloakrealms
 func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := r.Log.WithValues("Namespace", req.Namespace, "Name", req.NamespacedName)
+	logger := r.Log.WithValues("Namespace", req.Namespace, "Name", req.NamespacedName, "req", req)
 	logger.Info("reconciling KeycloakRealm")
 
 	// Fetch the KeycloakRealm instance
@@ -136,32 +146,33 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	realm, err = r.reconcile(ctx, realm)
+	realm, err = r.reconcile(ctx, realm, logger)
 	res := ctrl.Result{}
+	realm.Status.ObservedGeneration = realm.GetGeneration()
 
 	if err != nil {
 		r.Recorder.Event(&realm, "Normal", "error", err.Error())
 		res = ctrl.Result{Requeue: true}
+		realm = infrav1beta1.KeycloakRealmNotReady(realm, infrav1beta1.FailedReason, err.Error())
 	} else {
 		if realm.Spec.Interval != nil {
 			res = ctrl.Result{
-				Requeue:      true,
 				RequeueAfter: realm.Spec.Interval.Duration,
 			}
 		}
 
 		msg := "Realm successfully reconciled"
 		r.Recorder.Event(&realm, "Normal", "info", msg)
-		infrav1beta1.KeycloakRealmReady(realm, infrav1beta1.ReadyCondition, msg)
+		realm = infrav1beta1.KeycloakRealmReady(realm, infrav1beta1.SynchronizedReason, msg)
 	}
 
 	// Update status after reconciliation.
 	if err := r.patchStatus(ctx, &realm); err != nil {
-		log.Error(err, "unable to update status after reconciliation")
+		logger.Error(err, "unable to update status after reconciliation")
 		return ctrl.Result{Requeue: true}, err
 	}
 
-	return res, nil
+	return res, err
 }
 
 func (r *KeycloakRealmReconciler) locateJARByVersion(version string) (string, error) {
@@ -180,9 +191,24 @@ func (r *KeycloakRealmReconciler) locateJARByVersion(version string) (string, er
 	return "", err
 }
 
-func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1beta1.KeycloakRealm) (infrav1beta1.KeycloakRealm, error) {
+func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
 	jar, err := r.locateJARByVersion(realm.Spec.Version)
 	if err != nil {
+		return realm, err
+	}
+
+	var usr, pw string
+	if realm.Spec.AuthSecret != nil {
+		usr, pw, err = getSecret(ctx, r.Client, realm)
+		if err != nil {
+			return realm, err
+		}
+	}
+
+	msg := fmt.Sprintf("reconcile realm progressing")
+	r.Recorder.Event(&realm, "Normal", "info", msg)
+	realm = v1beta1.KeycloakRealmNotReady(realm, v1beta1.ProgressingReason, msg)
+	if r.patchStatus(ctx, &realm) != nil {
 		return realm, err
 	}
 
@@ -193,13 +219,9 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 	cmd = append(cmd, fmt.Sprintf("--keycloak.url=%s", realm.Spec.Address))
 	cmd = append(cmd, "--import.path=/dev/stdin")
 	cmd = append(cmd, "--import.file-type=json")
+	logger.Info("CMD OUT", "cmd", cmd)
 
 	if realm.Spec.AuthSecret != nil {
-		usr, pw, err := getSecret(ctx, r.Client, realm.Spec.AuthSecret)
-		if err != nil {
-			return realm, err
-		}
-
 		cmd = append(cmd, fmt.Sprintf("--keycloak.user=%s", usr))
 		cmd = append(cmd, fmt.Sprintf("--keycloak.password=%s", pw))
 	}
@@ -264,12 +286,17 @@ func (r *KeycloakRealmReconciler) substituteSecrets(ctx context.Context, realm i
 	return str, nil
 }
 
-func getSecret(ctx context.Context, c client.Client, sec *infrav1beta1.SecretReference) (string, string, error) {
+func getSecret(ctx context.Context, c client.Client, realm v1beta1.KeycloakRealm) (string, string, error) {
+	namespace := realm.Spec.AuthSecret.Namespace
+	if namespace == "" {
+		namespace = realm.GetNamespace()
+	}
+
 	// Fetch referencing root secret
 	secret := &corev1.Secret{}
 	secretName := types.NamespacedName{
-		Namespace: sec.Namespace,
-		Name:      sec.Name,
+		Namespace: namespace,
+		Name:      realm.Spec.AuthSecret.Name,
 	}
 	err := c.Get(ctx, secretName, secret)
 
@@ -278,7 +305,7 @@ func getSecret(ctx context.Context, c client.Client, sec *infrav1beta1.SecretRef
 		return "", "", fmt.Errorf("Referencing secret was not found: %w", err)
 	}
 
-	usr, pw, err := extractCredentials(sec, secret)
+	usr, pw, err := extractCredentials(realm.Spec.AuthSecret, secret)
 	if err != nil {
 		return usr, pw, fmt.Errorf("Credentials field not found in referenced rootSecret: %w", err)
 	}

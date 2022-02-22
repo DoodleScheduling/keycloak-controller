@@ -43,6 +43,7 @@ type KeycloakRealmSpec struct {
 	// +required
 	Version string `json:"version"`
 
+	// Realm is the unstructured keycloak realm representation
 	// +required
 	Realm extv1.JSON `json:"realm"`
 }
@@ -68,17 +69,23 @@ type SecretReference struct {
 
 // KeycloakRealmStatus defines the observed state of KeycloakRealm
 type KeycloakRealmStatus struct {
-	// Conditions holds the conditions for the VaultBinding.
+	// Conditions holds the conditions for the KeycloakRealm.
 	// +optional
-	Conditions            []metav1.Condition `json:"conditions,omitempty"`
-	LastExececutionOutput string             `json:"lastExececutionOutput"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// ObservedGeneration is the last generation reconciled by the controller
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// LastExececutionOutput is the stdout dump of keycloak-config-cli
+	// +optional
+	LastExececutionOutput string `json:"lastExececutionOutput,omitempty"`
 }
 
 const (
-	ReadyCondition            = "Ready"
-	ServicePortNotFoundReason = "ServicePortNotFound"
-	ServiceNotFoundReason     = "ServiceNotFound"
-	ServiceBackendReadyReason = "ServiceBackendReady"
+	ReadyCondition     = "Ready"
+	SynchronizedReason = "Synchronized"
+	ProgressingReason  = "Progressing"
+	FailedReason       = "Failed"
 )
 
 // ConditionalResource is a resource with conditions
@@ -119,7 +126,7 @@ func (in *KeycloakRealm) GetStatusConditions() *[]metav1.Condition {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:shortName=rc
+// +kubebuilder:resource:shortName=realm
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description=""
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].message",description=""

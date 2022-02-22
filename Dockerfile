@@ -11,7 +11,7 @@ RUN go mod download
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 
-FROM gcr.io/distroless/java-debian10:11
+FROM amazoncorretto:11-alpine
 WORKDIR /
 COPY --from=builder /workspace/manager .
 COPY assets /assets
