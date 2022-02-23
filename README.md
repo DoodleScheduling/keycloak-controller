@@ -1,14 +1,30 @@
 # k8skeycloak-controller
 
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4787/badge)](https://bestpractices.coreinfrastructure.org/projects/4787)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5641/badge)](https://bestpractices.coreinfrastructure.org/projects/5641)
 [![e2e](https://github.com/DoodleScheduling/k8skeycloak-controller/workflows/e2e/badge.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/actions)
 [![report](https://goreportcard.com/badge/github.com/DoodleScheduling/k8skeycloak-controller)](https://goreportcard.com/report/github.com/DoodleScheduling/k8skeycloak-controller)
-[![license](https://img.shields.io/github/license/DoodleScheduling/k8skeycloak-controller.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/blob/main/LICENSE)
+[![license](https://img.shields.io/github/license/DoodleScheduling/k8skeycloak-controller.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/blob/master/LICENSE)
 [![release](https://img.shields.io/github/release/DoodleScheduling/k8skeycloak-controller/all.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/releases)
 
-Keycloak realm declaration for kubernetes. [Compared to the keycloak-operator](https://github.com/keycloak/keycloak-operator) this controller actually reconciles the entire realm throughout all depths. The keycloak-operator basically only creates the realm and syncs top level changes only.
+Keycloak realm declaration for kubernetes. Compared to the [keycloak-operator](https://github.com/keycloak/keycloak-operator) this controller actually reconciles the entire realm throughout all depths. The keycloak-operator basically only creates the realm and syncs top level changes only.
 Under the hood the controller is a wrapper around the awesome [keycloak-config-cli](https://github.com/adorsys/keycloak-config-cli)
 which implements the entire realm update using the Keycloak REST API.
+
+## Requirements
+
+You need a running keycloak server. This controllers does not manage or deploy keycloak itself but rather manages realms.
+Also it is required to create a secret which contains the credentials for a user with enough permissions to create/manage realms.
+
+Example:
+```yaml
+apiVersion: v1
+data:
+  password: YWRtaW4=
+  username: YWRtaW4=
+kind: Secret
+metadata:
+  name: keycloak-admin
+```
 
 ## Example KeycloakRealm
 
@@ -16,65 +32,76 @@ The realm is the entire representation of the realm and is synced accordingly.
 It supports secrets substition to inject secrets from kubernetes secrets.
 You can use `${secret:secretName:secretField}` anywhere in the realm definition.
 
+This would create a realm called default if it does not exists. If it exists it would try to update it according to the specs.
+
 ```yaml
 apiVersion: keycloak.infra.doodle.com/v1beta1
 kind: KeycloakRealm
 metadata:
-  name: myrealm
-  namespace: default
+  name: default
 spec:
-  address: http://keycloak-iam-http
+  address: http://keycloak-http.keycloak/auth
   authSecret:
-    name: admin-credentials
+    name: keycloak-admin
+    passwordField: password
+    userField: username
   interval: 10m
   suspend: false
-  version: 15.0.2
   realm:
-    identityProviders:
-    - addReadTokenRoleOnCreate: false
-      alias: microsoft
-      authenticateByDefault: false
-      config:
-        clientId: 1b75ccdc-ad62-4fba-b0f0-079720295066
-        clientSecret: ${secret:microsoft:clientSecret}
-        defaultScope: User.Read
-        guiOrder: "10"
-        useJwksUrl: "true"
-      enabled: true
-      firstBrokerLoginFlowAlias: first broker login
-      internalId: microsoft
-      linkOnly: false
-      providerId: microsoft
-      storeToken: false
-      trustEmail: true
-      updateProfileFirstLoginMode: "on"
-    - addReadTokenRoleOnCreate: false
-      alias: github
-      authenticateByDefault: false
-      config:
-        clientId:  c9b76245-e2b6-496f-827f-eccd3b283496 
-        clientSecret: ${secret:github:clientSecret}
-        syncMode: IMPORT
-        useJwksUrl: "true"
-      enabled: true
-      firstBrokerLoginFlowAlias: first broker login
-      linkOnly: false
-      providerId: github
-      storeToken: false
-      trustEmail: false
-      updateProfileFirstLoginMode: "on"
-    internationalizationEnabled: false
-    loginTheme: default
-    loginWithEmailAllowed: true
-    maxDeltaTimeSeconds: 43200
-    maxFailureWaitSeconds: 900
-    minimumQuickLoginWaitSeconds: 60
-    notBefore: 0
+    realm: test
+    accessCodeLifespan: 60
+    accessCodeLifespanLogin: 1800
+    accessCodeLifespanUserAction: 300
+    accessTokenLifespan: 300
+    accessTokenLifespanForImplicitFlow: 900
+    accountTheme: test
+    actionTokenGeneratedByAdminLifespan: 43200
+    actionTokenGeneratedByUserLifespan: 300
+    adminEventsDetailsEnabled: true
+    adminEventsEnabled: true
+    directGrantFlow: direct grant
+    displayName: Test
+    dockerAuthenticationFlow: docker auth
+    duplicateEmailsAllowed: false
+    editUsernameAllowed: false
+    enabled: true
+    eventsEnabled: true
+    eventsExpiration: 1209600
+    loginTheme: foo
+    verifyEmail: true
+    waitIncrementSeconds: 60
+    webAuthnPolicyAcceptableAaguids: []
+    webAuthnPolicyAttestationConveyancePreference: not specified
+    webAuthnPolicyAuthenticatorAttachment: not specified
+    webAuthnPolicyAvoidSameAuthenticatorRegister: false
+    webAuthnPolicyCreateTimeout: 0
+    webAuthnPolicyPasswordlessAcceptableAaguids: []
+    webAuthnPolicyPasswordlessAttestationConveyancePreference: not specified
+    webAuthnPolicyPasswordlessAuthenticatorAttachment: not specified
+    webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister: false
+    webAuthnPolicyPasswordlessCreateTimeout: 0
+    webAuthnPolicyPasswordlessRequireResidentKey: not specified
+    webAuthnPolicyPasswordlessRpId: ""
+    webAuthnPolicyPasswordlessSignatureAlgorithms:
+    - ES256
+    webAuthnPolicyPasswordlessUserVerificationRequirement: not specified
+    webAuthnPolicyRequireResidentKey: not specified
+    webAuthnPolicyRpId: ""
+    webAuthnPolicySignatureAlgorithms:
+    - ES256
+    webAuthnPolicyUserVerificationRequirement: not specified
+  version: 15.0.2
 ```
 
-## Helm chart
+## Installation
 
-Please see [chart/k8skeycloak-controller](https://github.com/DoodleScheduling/k8skeycloak-controller) for the helm chart docs.
+### Helm
+
+Please see [chart/k8skeycloak-controller](https://github.com/DoodleScheduling/k8skeycloak-controller/tree/master/chart/k8skeycloak-controller) for the helm chart docs.
+
+### Manifests/kustomize
+
+Alternatively you may get the bundled manifests in each release to deploy it using kustomize or use them directly.
 
 ## Configure the controller
 
@@ -89,3 +116,21 @@ Available env variables:
 | `LEADER_ELECTION_NAMESPACE` | Change the leader election namespace. This is by default the same where the controller is deployed. | `` |
 | `NAMESPACES` | The controller listens by default for all namespaces. This may be limited to a comma delimted list of dedicated namespaces. | `` |
 | `CONCURRENT` | The number of concurrent reconcile workers.  | `4` |
+
+
+## Dealing with managed realms
+
+The controller tries to reconcile the realm in the specified interval (if specified) or if there is any spec change.
+The reconciliation can be paused by setting `spec.suspend` to `true`:
+
+```
+kubectl patch keycloakrealms.keycloak.infra.doodle.com myrealm -p '{"spec":{"suspend": true}}' --type=merge
+```
+
+This can be very useful if one wants to change and test some settings using the keycloak web ui where the controller should not interfere.
+
+
+## Using alongside keycloak-operator
+
+This controllers also works great in combination with the keycloak-operator.
+You may use (KeycloakRealm) keycloakrealms.keycloak.infra.doodle.com to manage the entire realm while for example using the keycloak-operator to manage KeycloakClients only.
