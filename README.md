@@ -6,7 +6,8 @@
 [![license](https://img.shields.io/github/license/DoodleScheduling/k8skeycloak-controller.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/blob/main/LICENSE)
 [![release](https://img.shields.io/github/release/DoodleScheduling/k8skeycloak-controller/all.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/releases)
 
-Reconcile a keycloak realm. Under the hood the controller is a wrapper around [keycloak-config-cli](https://github.com/adorsys/keycloak-config-cli)
+Keycloak realm declaration for kubernetes. [Compared to the keycloak-operator](https://github.com/keycloak/keycloak-operator) this controller actually reconciles the entire realm throughout all depths. The keycloak-operator basically only creates the realm and syncs top level changes only.
+Under the hood the controller is a wrapper around the awesome [keycloak-config-cli](https://github.com/adorsys/keycloak-config-cli)
 which implements the entire realm update using the Keycloak REST API.
 
 ## Example KeycloakRealm
@@ -19,7 +20,7 @@ You can use `${secret:secretName:secretField}` anywhere in the realm definition.
 apiVersion: keycloak.infra.doodle.com/v1beta1
 kind: KeycloakRealm
 metadata:
-  name: doodle
+  name: myrealm
   namespace: default
 spec:
   address: http://keycloak-iam-http
@@ -27,13 +28,14 @@ spec:
     name: admin-credentials
   interval: 10m
   suspend: false
+  version: 15.0.2
   realm:
     identityProviders:
     - addReadTokenRoleOnCreate: false
       alias: microsoft
       authenticateByDefault: false
       config:
-        clientId: d54681b1-27ae-4246-803c-1d2bf40b636b-test2
+        clientId: 1b75ccdc-ad62-4fba-b0f0-079720295066
         clientSecret: ${secret:microsoft:clientSecret}
         defaultScope: User.Read
         guiOrder: "10"
@@ -50,26 +52,24 @@ spec:
       alias: github
       authenticateByDefault: false
       config:
-        clientId: dedeed
+        clientId:  c9b76245-e2b6-496f-827f-eccd3b283496 
         clientSecret: ${secret:github:clientSecret}
         syncMode: IMPORT
         useJwksUrl: "true"
       enabled: true
       firstBrokerLoginFlowAlias: first broker login
-      internalId: 58ed4256-74c7-497f-9ac0-86b864d7a7b5
       linkOnly: false
       providerId: github
       storeToken: false
       trustEmail: false
       updateProfileFirstLoginMode: "on"
     internationalizationEnabled: false
-    loginTheme: doodle
+    loginTheme: default
     loginWithEmailAllowed: true
     maxDeltaTimeSeconds: 43200
     maxFailureWaitSeconds: 900
     minimumQuickLoginWaitSeconds: 60
     notBefore: 0
-    keycloakVersion: 15.0.2
 ```
 
 ## Helm chart
@@ -85,7 +85,6 @@ Available env variables:
 |-------|-------------| --------|
 | `METRICS_ADDR` | The address of the metric endpoint binds to. | `:9556` |
 | `PROBE_ADDR` | The address of the probe endpoints binds to. | `:9557` |
-| `HTTP_ADDR` | The address of the http keycloak. | `:8080` |
 | `ENABLE_LEADER_ELECTION` | Enable leader election for controller manager. | `false` |
 | `LEADER_ELECTION_NAMESPACE` | Change the leader election namespace. This is by default the same where the controller is deployed. | `` |
 | `NAMESPACES` | The controller listens by default for all namespaces. This may be limited to a comma delimted list of dedicated namespaces. | `` |
