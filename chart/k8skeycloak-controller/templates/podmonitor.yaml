@@ -17,7 +17,7 @@ metadata:
   annotations:
     {{- toYaml .Values.annotations | nindent 4 }}
 spec:
-  endpoints:
+  podMetricsEndpoints:
   - port: metrics
     path: {{ .Values.metricsPath }}
     interval: {{ .Values.podMonitor.interval }}
