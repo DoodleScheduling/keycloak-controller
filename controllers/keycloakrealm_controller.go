@@ -205,7 +205,7 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 		}
 	}
 
-	msg := fmt.Sprintf("reconcile realm progressing")
+	msg := "reconcile realm progressing"
 	r.Recorder.Event(&realm, "Normal", "info", msg)
 	realm = v1beta1.KeycloakRealmNotReady(realm, v1beta1.ProgressingReason, msg)
 	if r.patchStatus(ctx, &realm) != nil {
@@ -217,8 +217,7 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 	cmd = append(cmd, "-jar")
 	cmd = append(cmd, jar)
 	cmd = append(cmd, fmt.Sprintf("--keycloak.url=%s", realm.Spec.Address))
-	cmd = append(cmd, "--import.path=/dev/stdin")
-	cmd = append(cmd, "--import.file-type=json")
+	cmd = append(cmd, "--import.files.locations=/dev/stdin")
 	logger.Info("CMD OUT", "cmd", cmd)
 
 	if realm.Spec.AuthSecret != nil {
@@ -234,6 +233,7 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 	}
 
 	raw, err := r.substituteSecrets(ctx, realm)
+
 	if err != nil {
 		realm.Status.LastExececutionOutput = ""
 		return realm, err
@@ -267,12 +267,12 @@ func (r *KeycloakRealmReconciler) substituteSecrets(ctx context.Context, realm i
 		err := r.Client.Get(ctx, secretName, secret)
 
 		if err != nil {
-			errors = append(errors, fmt.Errorf("Referencing secret was not found: %w", err))
+			errors = append(errors, fmt.Errorf("referencing secret was not found: %w", err))
 			return parts[0]
 		}
 
 		if val, ok := secret.Data[parts[2]]; !ok {
-			errors = append(errors, fmt.Errorf("Field %s not found in secret %s", parts[2], parts[1]))
+			errors = append(errors, fmt.Errorf("field %s not found in secret %s", parts[2], parts[1]))
 			return parts[0]
 		} else {
 			return string(val)
@@ -302,12 +302,12 @@ func getSecret(ctx context.Context, c client.Client, realm v1beta1.KeycloakRealm
 
 	// Failed to fetch referenced secret, requeue immediately
 	if err != nil {
-		return "", "", fmt.Errorf("Referencing secret was not found: %w", err)
+		return "", "", fmt.Errorf("referencing secret was not found: %w", err)
 	}
 
 	usr, pw, err := extractCredentials(realm.Spec.AuthSecret, secret)
 	if err != nil {
-		return usr, pw, fmt.Errorf("Credentials field not found in referenced rootSecret: %w", err)
+		return usr, pw, fmt.Errorf("credentials field not found in referenced rootSecret: %w", err)
 	}
 
 	return usr, pw, err
@@ -320,13 +320,13 @@ func extractCredentials(credentials *infrav1beta1.SecretReference, secret *corev
 	)
 
 	if val, ok := secret.Data[credentials.UserField]; !ok {
-		return "", "", errors.New("Defined username field not found in secret")
+		return "", "", errors.New("defined username field not found in secret")
 	} else {
 		user = string(val)
 	}
 
 	if val, ok := secret.Data[credentials.PasswordField]; !ok {
-		return "", "", errors.New("Defined password field not found in secret")
+		return "", "", errors.New("defined password field not found in secret")
 	} else {
 		pw = string(val)
 	}
