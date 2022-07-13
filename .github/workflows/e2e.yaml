@@ -62,6 +62,8 @@ jobs:
           fi
       - name: Fetch keycloak-client 
         run: sh scripts/fetch-jars.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build container image
         run: |
           make docker-build IMG=test/k8skeycloak-controller:latest BUILD_PLATFORMS=linux/amd64 \
