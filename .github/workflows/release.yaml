@@ -58,7 +58,7 @@ jobs:
           tags: |
             type=raw,value=${{ steps.prep.outputs.VERSION }}
       - name: Fetch keycloak-client 
-        run: scripts/fetch-jars.sh
+        run: sh scripts/fetch-jars.sh
       - name: Publish multi-arch container image
         uses: docker/build-push-action@v2
         with:

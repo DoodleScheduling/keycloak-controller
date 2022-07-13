@@ -61,7 +61,7 @@ jobs:
             exit 1
           fi
       - name: Fetch keycloak-client 
-        run: scripts/fetch-jars.sh
+        run: sh scripts/fetch-jars.sh
       - name: Build container image
         run: |
           make docker-build IMG=test/k8skeycloak-controller:latest BUILD_PLATFORMS=linux/amd64 \
