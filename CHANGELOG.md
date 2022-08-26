@@ -2,7 +2,7 @@
 
 ## 0.1.1
 
-**Release date:** 2022-07-12
+**Release date:** 2022-08-26
 
 ## Changes 
 * Bundle keycloak-config-cli v5.2.1
