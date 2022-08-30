@@ -90,7 +90,7 @@ spec:
     webAuthnPolicySignatureAlgorithms:
     - ES256
     webAuthnPolicyUserVerificationRequirement: not specified
-  version: 15.0.2
+  version: 18.0.2
 ```
 
 ## Installation

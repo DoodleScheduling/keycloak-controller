@@ -52,4 +52,4 @@ spec:
     webAuthnPolicySignatureAlgorithms:
     - ES256
     webAuthnPolicyUserVerificationRequirement: not specified
-  version: 18.0.1
+  version: 18.0.2
