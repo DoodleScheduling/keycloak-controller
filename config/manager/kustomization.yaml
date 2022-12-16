@@ -4,4 +4,4 @@ resources:
 - deployment.yaml
 images:
 - name: ghcr.io/doodlescheduling/k8skeycloak-controller
-  newTag: v0.0.1
+  newTag: v0.0.2
