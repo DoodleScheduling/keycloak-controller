@@ -67,16 +67,12 @@ type KeycloakRealmReconciler struct {
 	secretRegex *regexp.Regexp
 }
 
-type ReconcileRequestedPredicate struct {
-	predicate.Funcs
-}
-
 type KeycloakRealmReconcilerOptions struct {
 	MaxConcurrentReconciles int
 }
 
 // SetupWithManager adding controllers
-func (r *KeycloakRealmReconciler) SetupWithManager(mgr ctrl.Manager, maxConcurrentReconciles int) error {
+func (r *KeycloakRealmReconciler) SetupWithManager(mgr ctrl.Manager, opts KeycloakRealmReconcilerOptions) error {
 	r.secretRegex = regexp.MustCompile(`\${secret:([^:}]+):([^:}]+)}`)
 
 	// Index the KeycloakRealm by the Secret references they point at
@@ -124,7 +120,7 @@ func (r *KeycloakRealmReconciler) SetupWithManager(mgr ctrl.Manager, maxConcurre
 			&source.Kind{Type: &infrav1beta1.KeycloakUser{}},
 			handler.EnqueueRequestsFromMapFunc(r.requestsForKeycloakUserChange),
 		).
-		WithOptions(controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}).
+		WithOptions(controller.Options{MaxConcurrentReconciles: opts.MaxConcurrentReconciles}).
 		Complete(r)
 }
 

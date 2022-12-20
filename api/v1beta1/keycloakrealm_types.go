@@ -22,7 +22,6 @@ import (
 )
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:shortName=realm
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description=""
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].message",description=""
