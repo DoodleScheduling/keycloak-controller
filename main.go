@@ -133,7 +133,9 @@ func main() {
 		Recorder: mgr.GetEventRecorderFor("KeycloakRealm"),
 	}
 
-	if err = realmReconciler.SetupWithManager(mgr, viper.GetInt("concurrent")); err != nil {
+	if err = realmReconciler.SetupWithManager(mgr, controllers.KeycloakRealmReconcilerOptions{
+		MaxConcurrentReconciles: viper.GetInt("concurrent"),
+	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KeycloakRealm")
 		os.Exit(1)
 	}

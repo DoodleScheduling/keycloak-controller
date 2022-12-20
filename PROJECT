@@ -4,4 +4,10 @@ resources:
 - group: keycloak.infra.doodle.com
   kind: KeycloakRealm
   version: v1beta1
+- group: keycloak.infra.doodle.com
+  kind: KeycloakClient
+  version: v1beta1
+- group: keycloak.infra.doodle.com
+  kind: KeycloakUser
+  version: v1beta1
 version: "2"

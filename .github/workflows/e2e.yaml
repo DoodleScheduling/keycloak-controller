@@ -79,7 +79,7 @@ jobs:
         run: make deploy IMG=test/k8skeycloak-controller:latest
       - name: Setup keycloak
         env:
-          KEYCLOAK_VER: ${{ '16.0.4' }}
+          KEYCLOAK_VER: ${{ '2.0.0' }}
         run: |
           kubectl create ns keycloak
           helm repo add codecentric https://codecentric.github.io/helm-charts
@@ -93,7 +93,7 @@ jobs:
               value: admin
           EOT
 
-          helm upgrade --wait -i keycloak codecentric/keycloak \
+          helm upgrade --wait -i keycloak codecentric/keycloakx \
           --version $KEYCLOAK_VER \
           --namespace keycloak \
           -f values.yaml
