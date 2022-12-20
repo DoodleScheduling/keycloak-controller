@@ -1,4 +1,3 @@
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -24,6 +23,26 @@ rules:
 - apiGroups:
   - keycloak.infra.doodle.com
   resources:
+  - keycloakclients
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keycloak.infra.doodle.com
+  resources:
+  - keycloakclients/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keycloak.infra.doodle.com
+  resources:
   - keycloakrealms
   verbs:
   - create
@@ -37,6 +56,26 @@ rules:
   - keycloak.infra.doodle.com
   resources:
   - keycloakrealms/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keycloak.infra.doodle.com
+  resources:
+  - keycloakusers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keycloak.infra.doodle.com
+  resources:
+  - keycloakusers/status
   verbs:
   - get
   - patch
