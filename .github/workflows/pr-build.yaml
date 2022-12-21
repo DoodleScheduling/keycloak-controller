@@ -47,7 +47,7 @@ jobs:
           fi
       - name: Build container image
         run: |
-          make docker-build IMG=test/k8skeycloak-controller:latest BUILD_PLATFORMS=linux/amd64 \
+          make docker-build BUILD_PLATFORMS=linux/amd64 \
             BUILD_ARGS="--cache-from=type=local,src=/tmp/.buildx-cache \
             --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max"
       - name: Create image tarball
