@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"path/filepath"
 	"testing"
 
@@ -106,13 +105,3 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })
-
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz1234567890")
-
-func randStringRunes(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
-}
