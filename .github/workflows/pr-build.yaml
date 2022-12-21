@@ -26,20 +26,20 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      #- name: fmt
-      #  run: make fmt
-      #- name: vet
-      #  run: make vet
-      #- name: lint
-      #  run: make lint
-      #- name: test
-      #  run: make test
+      - name: fmt
+        run: make fmt
+      - name: vet
+        run: make vet
+      - name: lint
+        run: make lint
+      - name: test
+        run: make test
       - name: build
         run: make build
-      #- name: Send go coverage report
-      #  uses: shogo82148/actions-goveralls@31ee804b8576ae49f6dc3caa22591bc5080e7920 #v1.6.0
-      #  with:
-      #    path-to-profile: coverage.out
+      - name: Send go coverage report
+        uses: shogo82148/actions-goveralls@31ee804b8576ae49f6dc3caa22591bc5080e7920 #v1.6.0
+        with:
+          path-to-profile: coverage.out
       - name: Check if working tree is dirty
         run: |
           if [[ $(git diff --stat) != '' ]]; then
@@ -99,9 +99,6 @@ jobs:
       - name: Run test
         run: |
           make kind-test TEST_PROFILE=${{ matrix.profile }}
-      - name: Run validation tests
-        run: |
-          make kind-deploy-validate TEST_PROFILE=${{ matrix.profile }}
       - name: Debug failure
         if: failure()
         run: |
