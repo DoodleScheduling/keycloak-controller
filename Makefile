@@ -123,8 +123,11 @@ CLUSTER=kind
 
 .PHONY: kind-test
 kind-test: docker-build ## Deploy including test
+	kubectl version
+	kustomize version
+
 	kind load docker-image ${IMG} --name ${CLUSTER}
-	kustomize build config/tests/cases/${TEST_PROFILE} --enable-helm | kubectl --context kind-${CLUSTER} apply -f -	
+	kustomize build config/tests/cases/${TEST_PROFILE} --enable-helm --reorder none | kubectl --context kind-${CLUSTER} apply -f -	
 	kubectl --context kind-${CLUSTER} -n k8skeycloak-system delete pods --all
 	kubectl --context kind-${CLUSTER} -n k8skeycloak-system wait --for=condition=Ready pods  --all
 	kubectl --context kind-${CLUSTER} -n k8skeycloak-system wait keycloakrealm/test --for=condition=Ready --timeout=3m

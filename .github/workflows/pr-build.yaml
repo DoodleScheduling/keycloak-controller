@@ -26,14 +26,14 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - name: fmt
-        run: make fmt
-      - name: vet
-        run: make vet
-      - name: lint
-        run: make lint
-      - name: test
-        run: make test
+      #- name: fmt
+      #  run: make fmt
+      #- name: vet
+      #  run: make vet
+      #- name: lint
+      #  run: make lint
+      #- name: test
+      #  run: make test
       - name: build
         run: make build
       - name: Send go coverage report
