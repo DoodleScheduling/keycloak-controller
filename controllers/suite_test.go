@@ -26,7 +26,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -58,7 +57,7 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "base", "crd", "bases")},
 		ErrorIfCRDPathMissing: false,
 	}
 
@@ -77,22 +76,17 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	dynClient, err := dynamic.NewForConfig(k8sManager.GetConfig())
-	Expect(err).ToNot(HaveOccurred(), "failed to setup dynClient")
-
 	//+kubebuilder:scaffold:scheme
-	// PrometheusPatchRule setup
+	// KeycloakRealm setup
 	fmt.Printf("setup..................................")
-	err = (&PrometheusPatchRuleReconciler{
-		Client:       k8sManager.GetClient(),
-		DynClient:    dynClient,
-		FieldManager: "test-suite",
-		Log:          ctrl.Log.WithName("controllers").WithName("PrometheusPatchRule"),
-		Scheme:       k8sManager.GetScheme(),
-		Recorder:     k8sManager.GetEventRecorderFor("PrometheusPatchRule"),
-	}).SetupWithManager(k8sManager, PrometheusPatchRuleReconcilerOptions{MaxConcurrentReconciles: 10})
+	err = (&KeycloakRealmReconciler{
+		Client:   k8sManager.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("KeycloakRealm"),
+		Scheme:   k8sManager.GetScheme(),
+		Recorder: k8sManager.GetEventRecorderFor("KeycloakRealm"),
+	}).SetupWithManager(k8sManager, KeycloakRealmReconcilerOptions{MaxConcurrentReconciles: 10})
 
-	Expect(err).ToNot(HaveOccurred(), "failed to setup PrometheusPatchRule")
+	Expect(err).ToNot(HaveOccurred(), "failed to setup KeycloakRealm")
 
 	ctx, cancel = context.WithCancel(context.TODO())
 	go func() {
