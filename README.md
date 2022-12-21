@@ -1,10 +1,10 @@
 # Keycloak controller for kubernetes
 
-[![release](https://img.shields.io/github/release/DoodleScheduling/k8sprom-patch-controller/all.svg)](https://github.com/DoodleScheduling/k8sprom-patch-controller/releases)
-[![release](https://github.com/doodlescheduling/k8sprom-patch-controller/actions/workflows/release.yaml/badge.svg)](https://github.com/doodlescheduling/k8sprom-patch-controller/actions/workflows/release.yaml)
-[![report](https://goreportcard.com/badge/github.com/DoodleScheduling/k8sprom-patch-controller)](https://goreportcard.com/report/github.com/DoodleScheduling/k8sprom-patch-controller)
-[![Coverage Status](https://coveralls.io/repos/github/DoodleScheduling/k8sprom-patch-controller/badge.svg?branch=master)](https://coveralls.io/github/DoodleScheduling/k8sprom-patch-controller?branch=master)
-[![license](https://img.shields.io/github/license/DoodleScheduling/k8sprom-patch-controller.svg)](https://github.com/DoodleScheduling/k8sprom-patch-controller/blob/master/LICENSE)
+[![release](https://img.shields.io/github/release/DoodleScheduling/k8skeycloak-controller/all.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/releases)
+[![release](https://github.com/doodlescheduling/k8skeycloak-controller/actions/workflows/release.yaml/badge.svg)](https://github.com/doodlescheduling/k8skeycloak-controller/actions/workflows/release.yaml)
+[![report](https://goreportcard.com/badge/github.com/DoodleScheduling/k8skeycloak-controller)](https://goreportcard.com/report/github.com/DoodleScheduling/k8skeycloak-controller)
+[![Coverage Status](https://coveralls.io/repos/github/DoodleScheduling/k8skeycloak-controller/badge.svg?branch=master)](https://coveralls.io/github/DoodleScheduling/k8skeycloak-controller?branch=master)
+[![license](https://img.shields.io/github/license/DoodleScheduling/k8skeycloak-controller.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/blob/master/LICENSE)
 
 Keycloak realm declaration for kubernetes. Compared to the [keycloak-operator](https://github.com/keycloak/keycloak-operator) this controller actually reconciles the entire realm throughout all depths. The keycloak-operator basically only creates the realm and syncs top level changes only.
 
