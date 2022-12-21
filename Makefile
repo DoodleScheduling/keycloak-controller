@@ -127,7 +127,7 @@ kind-test: docker-build ## Deploy including test
 	kind load docker-image ${IMG} --name ${CLUSTER}
 	kustomize build config/tests/cases/${TEST_PROFILE} --enable-helm | kubectl --context kind-${CLUSTER} apply -f -	
 	kubectl --context kind-${CLUSTER} -n k8skeycloak-system delete pods --all
-	kubectl --context kind-${CLUSTER} -n k8skeycloak-system wait --for=condition=Ready pods  --all
+	kubectl --context kind-${CLUSTER} -n k8skeycloak-system wait --for=condition=Ready pods --all --timeout=3m
 	kubectl --context kind-${CLUSTER} -n k8skeycloak-system wait keycloakrealm/test --for=condition=Ready --timeout=3m
 	kubectl --context kind-${CLUSTER} -n k8skeycloak-system port-forward svc/keycloakx-http 8090:80 &>/dev/null &
 	sleep 2
