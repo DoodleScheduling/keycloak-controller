@@ -1,0 +1,37 @@
+kind: Component
+resources:
+- metrics-rbac.yaml
+- podmonitor.yaml
+patches:
+- target:
+    kind: Deployment
+  patch: |
+    kind: Deployment
+    metadata:
+      name: controller
+    spec:
+      template:
+        spec:
+          containers:
+          - name: kube-rbac-proxy
+            image: quay.io/brancz/kube-rbac-proxy:v0.14.0
+            args:
+            - "--secure-listen-address=0.0.0.0:8443"
+            - "--upstream=http://127.0.0.1:9556/"
+            - "--logtostderr=true"
+            - "--v=0"
+            ports:
+            - containerPort: 8443
+              protocol: TCP
+              name: https
+            resources:
+              limits:
+                cpu: 500m
+                memory: 128Mi
+              requests:
+                cpu: 5m
+                memory: 64Mi
+          - name: k8skeycloak-controller
+            args:
+            - --enable-leader-election
+            - --metrics-addr=127.0.0.1:9556

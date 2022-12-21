@@ -1,12 +1,17 @@
-# k8skeycloak-controller
+# Keycloak controller for kubernetes
 
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5641/badge)](https://bestpractices.coreinfrastructure.org/projects/5641)
-[![e2e](https://github.com/DoodleScheduling/k8skeycloak-controller/workflows/e2e/badge.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/actions)
-[![report](https://goreportcard.com/badge/github.com/DoodleScheduling/k8skeycloak-controller)](https://goreportcard.com/report/github.com/DoodleScheduling/k8skeycloak-controller)
-[![license](https://img.shields.io/github/license/DoodleScheduling/k8skeycloak-controller.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/blob/master/LICENSE)
-[![release](https://img.shields.io/github/release/DoodleScheduling/k8skeycloak-controller/all.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/releases)
+[![release](https://img.shields.io/github/release/DoodleScheduling/k8sprom-patch-controller/all.svg)](https://github.com/DoodleScheduling/k8sprom-patch-controller/releases)
+[![release](https://github.com/doodlescheduling/k8sprom-patch-controller/actions/workflows/release.yaml/badge.svg)](https://github.com/doodlescheduling/k8sprom-patch-controller/actions/workflows/release.yaml)
+[![report](https://goreportcard.com/badge/github.com/DoodleScheduling/k8sprom-patch-controller)](https://goreportcard.com/report/github.com/DoodleScheduling/k8sprom-patch-controller)
+[![Coverage Status](https://coveralls.io/repos/github/DoodleScheduling/k8sprom-patch-controller/badge.svg?branch=master)](https://coveralls.io/github/DoodleScheduling/k8sprom-patch-controller?branch=master)
+[![license](https://img.shields.io/github/license/DoodleScheduling/k8sprom-patch-controller.svg)](https://github.com/DoodleScheduling/k8sprom-patch-controller/blob/master/LICENSE)
 
 Keycloak realm declaration for kubernetes. Compared to the [keycloak-operator](https://github.com/keycloak/keycloak-operator) this controller actually reconciles the entire realm throughout all depths. The keycloak-operator basically only creates the realm and syncs top level changes only.
+
+This controller supports KeycloakRealm, KeycloakClient and KeycloakUser.
+However by design it does not actually deploy keycloak, it only manages one or multiple keycloakrealms.
+This controller runs great in combination with the official keycloak operator which deploys keycloak while this controller can manage the realm.
+
 Under the hood the controller is a wrapper around the awesome [keycloak-config-cli](https://github.com/adorsys/keycloak-config-cli)
 which implements the entire realm update using the Keycloak REST API.
 

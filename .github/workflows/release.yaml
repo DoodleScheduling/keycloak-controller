@@ -3,91 +3,38 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'image tag prefix'
-        default: 'rc'
-        required: true
 
 permissions:
   contents: write # needed to write releases
   id-token: write # needed for keyless signing
   packages: write # needed for ghcr access
 
-env:
-  CONTROLLER: ${{ github.event.repository.name }}
-
 jobs:
-  build-push:
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup Kustomize
-        uses: fluxcd/pkg/actions/kustomize@main
-      - name: Prepare
-        id: prep
-        run: |
-          VERSION="${{ github.event.inputs.tag }}-${GITHUB_SHA::8}"
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF/refs\/tags\//}
-          fi
-          echo ::set-output name=BUILD_DATE::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          echo ::set-output name=VERSION::${VERSION}
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v1
+      - name: Checkout code
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 #v3
         with:
-          platforms: all
-      - name: Setup Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
+          fetch-depth: 0
+      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 #v3.5.0
         with:
-          buildkitd-flags: "--debug"
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+          go-version: '1.19'
+      - name: Docker Login
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a #v2.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Generate images meta
-        id: meta
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/doodlescheduling/${{ env.CONTROLLER }}
-          tags: |
-            type=raw,value=${{ steps.prep.outputs.VERSION }}
-      - name: Fetch keycloak-client 
-        run: sh scripts/fetch-jars.sh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish multi-arch container image
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          builder: ${{ steps.buildx.outputs.name }}
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-      - name: Check images
-        run: |
-          docker buildx imagetools inspect ghcr.io/doodlescheduling/${{ env.CONTROLLER }}:${{ steps.prep.outputs.VERSION }}
-          docker pull ghcr.io/doodlescheduling/${{ env.CONTROLLER }}:${{ steps.prep.outputs.VERSION }}
-      - name: Generate release manifests
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          mkdir -p config/release
-          kustomize build ./config/crd > ./config/release/${{ env.CONTROLLER }}.crds.yaml
-          kustomize build ./config/manager > ./config/release/${{ env.CONTROLLER }}.deployment.yaml
-          echo '[CHANGELOG](https://github.com/DoodleScheduling/${{ env.CONTROLLER }}/blob/master/CHANGELOG.md)' > ./config/release/notes.md
-      - uses: anchore/sbom-action/download-syft@v0
+      - name: Setup Cosign
+        uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b #v2.8.1
+      - uses: anchore/sbom-action/download-syft@06e109483e6aa305a2b2395eabae554e51530e1d #v0.13.1
       - name: Create release and SBOM
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@8f67e590f2d095516493f017008adc464e63adb1 #v4.1.0
         with:
           version: latest
-          args: release --release-notes=config/release/notes.md --rm-dist --skip-validate
+          args: release --rm-dist --skip-validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,111 @@
+name: pr-build
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 #v3
+      - name: Setup Go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 #v3.5.0
+        with:
+          go-version: 1.19.x
+      - name: Restore Go cache
+        uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 #v3.0.11
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: fmt
+        run: make fmt
+      - name: vet
+        run: make vet
+      - name: lint
+        run: make lint
+      - name: test
+        run: make test
+      - name: build
+        run: make build
+      - name: Send go coverage report
+        uses: shogo82148/actions-goveralls@31ee804b8576ae49f6dc3caa22591bc5080e7920 #v1.6.0
+        with:
+          path-to-profile: coverage.out
+      - name: Check if working tree is dirty
+        run: |
+          if [[ $(git diff --stat) != '' ]]; then
+            git --no-pager diff
+            echo 'run <make test> and commit changes'
+            exit 1
+          fi
+      - name: Build container image
+        run: |
+          make docker-build IMG=test/k8skeycloak-controller:latest BUILD_PLATFORMS=linux/amd64 \
+            BUILD_ARGS="--cache-from=type=local,src=/tmp/.buildx-cache \
+            --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max"
+      - name: Create image tarball
+        run: |
+          docker save --output k8skeycloak-controller-container.tar k8skeycloak-controller:latest
+      - name: Upload image
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb #v3.1.1
+        with:
+          name: k8skeycloak-controller-container
+          path: k8skeycloak-controller-container.tar        
+      - id: profiles
+        name: Determine test profiles
+        run: |
+          profiles=$(ls config/tests/cases | jq -R -s -c 'split("\n")[:-1]')
+          echo $profiles
+          echo "::set-output name=matrix::$profiles"
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        profile: ${{ fromJson(needs.apiserver.outputs.profiles) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 #v3
+      - name: Setup Go
+        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 #v3.4.0
+        with:
+          go-version: 1.19.x
+      - name: Setup Kubernetes
+        uses: engineerd/setup-kind@aa272fe2a7309878ffc2a81c56cfe3ef108ae7d0 #v0.5.0
+        with:
+          name: kjournal
+          version: v0.11.1
+          image: kindest/node:v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6
+      - name: Download k8skeycloak-controller container
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 #v3.0.1
+        with:
+          name: k8skeycloak-controller-container
+          path: /tmp
+      - name: Load images
+        run: |
+          docker load --input /tmp/k8skeycloak-controller-container.tar
+          docker image ls -a
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@6691bdeb1b0a3286fb7f70fd1423c10e81e5375f # v2.0.0
+      - name: Deploy
+        run: |
+          kustomize build config/tests/cases/${{ matrix.profile }} | kubectl apply -f -
+      - name: Run validation tests
+        run: |
+          make kind-deploy-validate TEST_PROFILE=${{ matrix.profile }}
+      - name: Debug failure
+        if: failure()
+        run: |
+          kubectl -n kube-system describe pods
+          kubectl -n k8skeycloak-system describe pods
+          kubectl -n k8skeycloak-system get all
+          kubectl -n k8skeycloak-system logs deploy/k8skeycloak-controller manager
+          kubectl -n k8skeycloak-system get keycloakrealm -o yaml

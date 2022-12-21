@@ -10,17 +10,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 #v3
         with:
           fetch-depth: 0
 
-      - name: Configure Git
+      - name: Install Helm
+        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 #v3.5
+
+      - name: Login to Github Container Registry using helm
+        run: echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io --username ${{ github.actor }} --password-stdin
+
+      - name: Package helm charts
         run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.3.0
-        with:
-          charts_dir: ./chart
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          helm package chart/k8sprom-patch-controller -d chart
+
+      - name: Publish helm charts to Github Container Registry
+        run: |
+          repository=$(echo "${{ github.repository_owner }}" | tr [:upper:] [:lower:])
+          helm push ${{ github.workspace }}/chart/k8sprom-patch-controller-*.tgz oci://ghcr.io/$repository/charts

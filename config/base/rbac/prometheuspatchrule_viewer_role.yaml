@@ -1,0 +1,20 @@
+# permissions for end users to view patchrules.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheuspatchrules-viewer-role
+rules:
+- apiGroups:
+  - metrics.infra.doodle.com
+  resources:
+  - prometheuspatchrules
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - metrics.infra.doodle.com
+  resources:
+  - prometheuspatchrules/status
+  verbs:
+  - get

@@ -7,8 +7,7 @@ Installs the [k8skeycloak-controller](https://github.com/DoodleScheduling/k8skey
 To install the chart with the release name `k8skeycloak-controller`:
 
 ```console
-helm repo add k8skeycloak-controller https://doodlescheduling.github.io/k8skeycloak-controller/
-helm upgrade --install k8skeycloak-controller k8skeycloak-controller/k8skeycloak-controller
+helm upgrade --install k8skeycloak-controller oci://ghcr.io/doodlescheduling/charts/k8skeycloak-controller
 ```
 
 This command deploys the k8skeycloak-controller with the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
@@ -30,5 +29,5 @@ podAnnotations:
 See Customizing the Chart Before Installing. To see all configurable options with detailed comments, visit the chart's values.yaml, or run the configuration command:
 
 ```sh
-$ helm show values k8skeycloak-controller/k8skeycloak-controller
+$ helm show values oci://ghcr.io/doodlescheduling/charts/k8skeycloak-controller
 ```

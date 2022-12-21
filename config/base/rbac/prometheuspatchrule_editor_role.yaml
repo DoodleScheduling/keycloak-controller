@@ -1,0 +1,24 @@
+# permissions for end users to edit patchrules.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheuspatchrules-editor-role
+rules:
+- apiGroups:
+  - metrics.infra.doodle.com
+  resources:
+  - prometheuspatchrules
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - metrics.infra.doodle.com
+  resources:
+  - prometheuspatchrules/status
+  verbs:
+  - get
