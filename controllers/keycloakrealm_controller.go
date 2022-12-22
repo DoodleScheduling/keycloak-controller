@@ -321,7 +321,7 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 	}
 
 	go func() {
-		io.WriteString(stdin, raw)
+		_, _ = io.WriteString(stdin, raw)
 		stdin.Close()
 	}()
 

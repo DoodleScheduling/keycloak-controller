@@ -1,0 +1,49 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: k8skeycloak-system
+
+resources: 
+- ../../../default
+- ../../base
+
+helmCharts:
+- repo: https://codecentric.github.io/helm-charts
+  name: keycloakx
+  version: 2.0.0
+  releaseName: keycloakx
+  namespace: k8skeycloak-system
+  valuesInline:
+    image:
+      tag: "18.0.2"
+
+    command:
+      - "/opt/keycloak/bin/kc.sh"
+      - "start"
+      - "--auto-build"
+      - "--health-enabled=true"
+      - "--http-enabled=true"
+      - "--http-port=8080"
+      - "--hostname-strict=false"
+      - "--hostname-strict-https=false"
+    extraEnv: |
+      - name: KEYCLOAK_ADMIN
+        value: admin
+      - name: KEYCLOAK_ADMIN_PASSWORD
+        value: admin
+      - name: JAVA_OPTS_APPEND
+        value: >-
+          -Djgroups.dns.query=keycloakx-headless
+
+images:
+- name: ghcr.io/doodlescheduling/k8skeycloak-controller
+  newTag: latest
+  newName: k8skeycloak-controller
+
+patchesStrategicMerge:
+- | 
+  apiVersion: keycloak.infra.doodle.com/v1beta1
+  kind: KeycloakRealm
+  metadata:
+    name: test
+  spec:
+    version: 18.0.2

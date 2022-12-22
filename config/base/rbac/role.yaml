@@ -1,0 +1,40 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - metrics.infra.doodle.com
+  resources:
+  - prometheuspatchrules
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - metrics.infra.doodle.com
+  resources:
+  - prometheuspatchrules/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - metrics.infra.doodle.com
+  resources:
+  - prometheuspatchrules/status
+  verbs:
+  - get
+  - patch
+  - update

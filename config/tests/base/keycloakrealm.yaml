@@ -1,0 +1,54 @@
+apiVersion: keycloak.infra.doodle.com/v1beta1
+kind: KeycloakRealm
+metadata:
+  name: test
+spec:
+  address: http://keycloakx-http/auth
+  authSecret:
+    name: keycloak-admin
+    passwordField: password
+    userField: username
+  interval: 10m
+  realm:
+    realm: test
+    accessCodeLifespan: 60
+    accessCodeLifespanLogin: 1800
+    accessCodeLifespanUserAction: 300
+    accessTokenLifespan: 300
+    accessTokenLifespanForImplicitFlow: 900
+    accountTheme: test
+    actionTokenGeneratedByAdminLifespan: 43200
+    actionTokenGeneratedByUserLifespan: 300
+    adminEventsDetailsEnabled: true
+    adminEventsEnabled: true
+    directGrantFlow: direct grant
+    displayName: Test
+    dockerAuthenticationFlow: docker auth
+    duplicateEmailsAllowed: false
+    editUsernameAllowed: false
+    enabled: true
+    eventsEnabled: true
+    eventsExpiration: 1209600
+    loginTheme: foo
+    verifyEmail: true
+    waitIncrementSeconds: 60
+    webAuthnPolicyAcceptableAaguids: []
+    webAuthnPolicyAttestationConveyancePreference: not specified
+    webAuthnPolicyAuthenticatorAttachment: not specified
+    webAuthnPolicyAvoidSameAuthenticatorRegister: false
+    webAuthnPolicyCreateTimeout: 0
+    webAuthnPolicyPasswordlessAcceptableAaguids: []
+    webAuthnPolicyPasswordlessAttestationConveyancePreference: not specified
+    webAuthnPolicyPasswordlessAuthenticatorAttachment: not specified
+    webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister: false
+    webAuthnPolicyPasswordlessCreateTimeout: 0
+    webAuthnPolicyPasswordlessRequireResidentKey: not specified
+    webAuthnPolicyPasswordlessRpId: ""
+    webAuthnPolicyPasswordlessSignatureAlgorithms:
+    - ES256
+    webAuthnPolicyPasswordlessUserVerificationRequirement: not specified
+    webAuthnPolicyRequireResidentKey: not specified
+    webAuthnPolicyRpId: ""
+    webAuthnPolicySignatureAlgorithms:
+    - ES256
+    webAuthnPolicyUserVerificationRequirement: not specified
