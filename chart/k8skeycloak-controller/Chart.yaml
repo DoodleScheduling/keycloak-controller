@@ -1,5 +1,5 @@
 apiVersion: v2
-appVersion: v0.2.0
+appVersion: 0.2.0
 description: Keycloak Realm reconciler
 home: https://github.com/DoodleScheduling/k8skeycloak-controller
 maintainers:
@@ -12,4 +12,4 @@ keywords:
 name: k8skeycloak-controller
 sources:
 - https://github.com/DoodleScheduling/k8skeycloak-controller
-version: 0.2.0
+version: 0.2.1
