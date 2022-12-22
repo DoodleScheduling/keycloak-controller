@@ -19,6 +19,8 @@ helmCharts:
     command:
       - "/opt/keycloak/bin/kc.sh"
       - "start"
+      - "--auto-build"
+      - "--health-enabled=true"
       - "--http-enabled=true"
       - "--http-port=8080"
       - "--hostname-strict=false"
