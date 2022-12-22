@@ -22,9 +22,9 @@ jobs:
 
       - name: Package helm charts
         run: |
-          helm package chart/k8sprom-patch-controller -d chart
+          helm package chart/k8skeycloak-controller -d chart
 
       - name: Publish helm charts to Github Container Registry
         run: |
           repository=$(echo "${{ github.repository_owner }}" | tr [:upper:] [:lower:])
-          helm push ${{ github.workspace }}/chart/k8sprom-patch-controller-*.tgz oci://ghcr.io/$repository/charts
+          helm push ${{ github.workspace }}/chart/k8skeycloak-controller-*.tgz oci://ghcr.io/$repository/charts
