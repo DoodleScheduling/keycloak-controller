@@ -133,9 +133,3 @@ kubectl patch keycloakrealms.keycloak.infra.doodle.com myrealm -p '{"spec":{"sus
 ```
 
 This can be very useful if one wants to change and test some settings using the keycloak web ui where the controller should not interfere.
-
-
-## Using alongside keycloak-operator
-
-This controllers also works great in combination with the keycloak-operator.
-You may use (KeycloakRealm) keycloakrealms.keycloak.infra.doodle.com to manage the entire realm while for example using the keycloak-operator to manage KeycloakClients only.
