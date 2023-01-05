@@ -23,6 +23,8 @@ rules:
   - "keycloak.infra.doodle.com"
   resources:
   - keycloakrealms
+  - keycloakclients
+  - keycloakusers
   verbs:
   - create
   - delete
@@ -35,6 +37,8 @@ rules:
   - "keycloak.infra.doodle.com"
   resources:
   - keycloakrealms/status
+  - keycloakclients/status
+  - keycloakusers/status
   verbs:
   - get
   - patch

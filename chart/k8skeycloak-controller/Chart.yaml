@@ -12,4 +12,4 @@ keywords:
 name: k8skeycloak-controller
 sources:
 - https://github.com/DoodleScheduling/k8skeycloak-controller
-version: 0.2.1
+version: 0.3.1
