@@ -338,7 +338,7 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
 	// Fetch the KeycloakRealm instance
 	var clients infrav1beta1.KeycloakClientList
-	err := r.Client.List(ctx, &clients)
+	err := r.Client.List(ctx, &clients, client.InNamespace(realm.Namespace))
 	if err != nil {
 		return realm, err
 	}
@@ -355,7 +355,7 @@ func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, re
 func (r *KeycloakRealmReconciler) extendRealmWithUsers(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
 	// Fetch the KeycloakRealm instance
 	var users infrav1beta1.KeycloakUserList
-	err := r.Client.List(ctx, &users)
+	err := r.Client.List(ctx, &users, client.InNamespace(realm.Namespace))
 	if err != nil {
 		return realm, err
 	}
