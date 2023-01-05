@@ -315,6 +315,8 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 
 	raw, err := r.substituteSecrets(ctx, realm)
 
+	fmt.Printf("raw ------------------------------------\n\n%s\n\n", raw)
+
 	if err != nil {
 		realm.Status.LastExececutionOutput = ""
 		return realm, err
