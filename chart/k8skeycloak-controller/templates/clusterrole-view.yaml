@@ -16,6 +16,8 @@ rules:
   - "keycloak.infra.doodle.com"
   resources:
   - keycloakrealms
+  - keycloakclients
+  - keycloakusers
   verbs:
   - get
   - list
@@ -24,6 +26,8 @@ rules:
   - "keycloak.infra.doodle.com"
   resources:
   - keycloakrealms/status
+  - keycloakclients/status
+  - keycloakusers/status
   verbs:
   - get
 {{- end }}
