@@ -1,0 +1,34 @@
+name: pr-close
+on:
+  pull_request:
+    types: [closed]
+jobs:
+  cleanup:
+    runs-on: [self-hosted, minimalistic]
+    timeout-minutes: 3
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - name: Get shared actions
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+        with:
+          repository: 'DoodleScheduling/actions'
+          ref: v3
+          path: './.actions'
+          token: ${{ secrets.GH_ACTIONS }}
+
+      - uses: ./.actions/pull-request-labels
+        id: pr-labels
+
+      - uses:  ./.actions/deploy-devbox
+        if: ${{ steps.pr-labels.outputs.targets != '' }}
+        with:
+          version: "*" # * is the default but this just makes it more clear
+          name: ${{ github.event.repository.name }}
+          namespaces: ${{ steps.pr-labels.outputs.targets }}
+          devops-svc-ssh-key: ${{ secrets.PRIVATE_SSH_KEY_GITOPS }}
+
+      - name: Cancel build runs
+        uses: styfle/cancel-workflow-action@9f10b1b9fa56e99e4c5d12c2a085c8a0c37ab0ac #0.10.1
+        with:
+          ignore_sha: true
+          workflow_id: all

@@ -1,17 +1,15 @@
 name: pr-build
-
 on:
   pull_request:
     types:
       - opened
       - synchronize
       - reopened
-
 jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      profiles: ${{ steps.profiles.outputs.matrix }}    
+      profiles: ${{ steps.profiles.outputs.matrix }}
     steps:
       - name: Checkout
         uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b #v3
@@ -59,18 +57,21 @@ jobs:
         uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb #v3.1.1
         with:
           name: k8skeycloak-controller-container
-          path: k8skeycloak-controller-container.tar        
+          path: k8skeycloak-controller-container.tar
       - id: profiles
         name: Determine test profiles
         run: |
           profiles=$(ls config/tests/cases | jq -R -s -c 'split("\n")[:-1]')
           echo $profiles
           echo "::set-output name=matrix::$profiles"
-
+      - uses: ./.actions/trigger-pr-deploy
+    permissions:
+      actions: write
+      id-token: write
   e2e-tests:
     runs-on: ubuntu-latest
     needs:
-    - build
+      - build
     strategy:
       matrix:
         profile: ${{ fromJson(needs.build.outputs.profiles) }}
@@ -107,3 +108,4 @@ jobs:
           kubectl -n k8skeycloak-system get all
           kubectl -n k8skeycloak-system logs deploy/k8skeycloak-controller
           kubectl -n k8skeycloak-system get keycloakrealm -o yaml
+concurrency: null

@@ -1,0 +1,39 @@
+name: pr-verify
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+jobs:
+  size-label:
+    runs-on: [self-hosted, minimalistic]
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - name: size-label
+        uses: "pascalgn/size-label-action@a4655c448bb838e8d73b81e97fd0831bb4cbda1e"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACTIONS }}
+
+  release-label:
+    runs-on: [self-hosted, linux, minimalistic]
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Get shared actions
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+        with:
+          repository: 'DoodleScheduling/actions'
+          ref: v3
+          path: './.actions'
+          token: ${{ secrets.GH_ACTIONS }}
+      
+      - uses: ./.actions/preview-release
+        with:
+          token: ${{ secrets.GH_ACTIONS }}

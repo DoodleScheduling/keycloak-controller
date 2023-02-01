@@ -1,0 +1,22 @@
+name: pr-unpin
+on:
+  pull_request:
+    types:
+      - unlabeled
+
+jobs:
+  unpin:
+    runs-on: [self-hosted, minimalistic]
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+    - name: Get shared actions
+      uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+      with:
+        repository: 'DoodleScheduling/actions'
+        ref: v3
+        path: './.actions'
+        token: ${{ secrets.GH_ACTIONS }}
+
+    - uses: ./.actions/unpin-devbox
+      with:
+        devops-svc-ssh-key: ${{ secrets.PRIVATE_SSH_KEY_GITOPS }}
