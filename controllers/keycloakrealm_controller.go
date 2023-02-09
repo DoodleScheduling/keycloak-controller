@@ -424,7 +424,7 @@ func createProxy(realm infrav1beta1.KeycloakRealm, logger logr.Logger, failedReq
 	}
 
 	go func() {
-		http.Serve(socket, otelhttp.NewHandler(&proxy, "k8skeycloak-controller"))
+		_ = http.Serve(socket, otelhttp.NewHandler(&proxy, "k8skeycloak-controller"))
 	}()
 
 	return socket, nil
@@ -467,7 +467,7 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(res.StatusCode)
-	io.Copy(w, tee)
+	_, _ = io.Copy(w, tee)
 
 	if res.StatusCode >= 400 {
 		p.failedRequests <- infrav1beta1.RequestStatus{
