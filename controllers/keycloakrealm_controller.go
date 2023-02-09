@@ -36,10 +36,12 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -379,13 +381,13 @@ func createProxy(realm infrav1beta1.KeycloakRealm, logger logr.Logger, failedReq
 		resource.WithProcess(),
 	)
 	if err != nil {
-		return nil, errors.New("failed creating otlp trace exporter")
+		return nil, fmt.Errorf("failed creating otlp trace resources: %w", err)
 	}
 
 	client := otlptracegrpc.NewClient()
 	exporter, err := otlptrace.New(context.Background(), client)
 	if err != nil {
-		return nil, errors.New("failed creating otlp trace exporter")
+		return nil, fmt.Errorf("failed creating otlp trace exporter: %w", err)
 	}
 
 	tp := trace.NewTracerProvider(
@@ -431,6 +433,7 @@ func createProxy(realm infrav1beta1.KeycloakRealm, logger logr.Logger, failedReq
 }
 
 type proxy struct {
+	realm          infrav1beta1.KeycloakRealm
 	failedRequests chan infrav1beta1.RequestStatus
 	scheme         string
 	host           string
@@ -439,12 +442,15 @@ type proxy struct {
 }
 
 func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	clone := r.Clone(context.TODO())
 	clone.URL.Scheme = p.scheme
 	clone.URL.Host = p.host
 	clone.URL.Path = fmt.Sprintf("%s%s", p.path, r.URL.Path)
 	clone.RequestURI = ""
+
+	cxt := r.Context()
+	span := oteltrace.SpanFromContext(cxt)
+	span.SetAttributes(attribute.String("realm", p.realm.Name), attribute.String("namespace", p.realm.Namespace))
 
 	// send request to proxy target
 	res, err := p.client.Do(clone)
