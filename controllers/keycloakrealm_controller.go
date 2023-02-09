@@ -17,16 +17,29 @@ limitations under the License.
 package controllers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
+	"sync"
+	"time"
 
 	"github.com/go-logr/logr"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/contrib/propagators/b3"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -217,8 +230,16 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
+	start := time.Now()
 	realm, err = r.reconcile(ctx, realm, logger)
 	res := ctrl.Result{}
+
+	done := time.Now()
+
+	realm.Status.LastReconcileDuration = metav1.Duration{
+		Duration: done.Sub(start),
+	}
+
 	realm.Status.ObservedGeneration = realm.GetGeneration()
 
 	if err != nil {
@@ -283,6 +304,8 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 		return realm, err
 	}
 
+	realm.Status.SubResourceCatalog = []infrav1beta1.ResourceReference{}
+
 	realm, err = r.extendRealmWithClients(ctx, realm, logger)
 	if err != nil {
 		return realm, err
@@ -293,11 +316,21 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 		return realm, err
 	}
 
+	realm.Status.LastFailedRequests = []infrav1beta1.RequestStatus{}
+	failedRequests := make(chan infrav1beta1.RequestStatus)
+	socket, err := createProxy(realm, logger, failedRequests)
+	if err != nil {
+		return realm, err
+	}
+
+	defer socket.Close()
+	addr := fmt.Sprintf("http://127.0.0.1:%d", socket.Addr().(*net.TCPAddr).Port)
+
 	var cmd []string
 
 	cmd = append(cmd, "-jar")
 	cmd = append(cmd, jar)
-	cmd = append(cmd, fmt.Sprintf("--keycloak.url=%s", realm.Spec.Address))
+	cmd = append(cmd, fmt.Sprintf("--keycloak.url=%s", addr))
 	cmd = append(cmd, "--import.files.locations=/dev/stdin")
 	logger.Info("CMD OUT", "cmd", cmd)
 
@@ -309,34 +342,146 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 	exec := exec.Command("/usr/bin/java", cmd...)
 	stdin, err := exec.StdinPipe()
 	if err != nil {
-		realm.Status.LastExececutionOutput = ""
 		return realm, err
 	}
 
 	raw, err := r.substituteSecrets(ctx, realm)
-
 	if err != nil {
-		realm.Status.LastExececutionOutput = ""
 		return realm, err
 	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
 
 	go func() {
 		_, _ = io.WriteString(stdin, raw)
 		stdin.Close()
 	}()
 
-	out, err := exec.CombinedOutput()
-	realm.Status.LastExececutionOutput = string(out)
+	go func() {
+		for requestStatus := range failedRequests {
+			realm.Status.LastFailedRequests = append(realm.Status.LastFailedRequests, requestStatus)
+		}
+	}()
 
+	stdout, err := exec.CombinedOutput()
+	realm.Status.LastExececutionOutput = string(stdout)
+
+	close(failedRequests)
+	wg.Done()
+
+	return realm, err
+}
+
+func createProxy(realm infrav1beta1.KeycloakRealm, logger logr.Logger, failedRequests chan infrav1beta1.RequestStatus) (net.Listener, error) {
+	resources, err := resource.New(context.Background(),
+		resource.WithFromEnv(),
+		resource.WithProcess(),
+	)
 	if err != nil {
-		return realm, err
+		return nil, errors.New("failed creating otlp trace exporter")
 	}
 
-	return realm, nil
+	client := otlptracegrpc.NewClient()
+	exporter, err := otlptrace.New(context.Background(), client)
+	if err != nil {
+		return nil, errors.New("failed creating otlp trace exporter")
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exporter),
+		trace.WithResource(resources),
+	)
+
+	otel.SetTextMapPropagator(b3.New())
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			logger.Error(err, "failed to shutdown trace provider")
+		}
+	}()
+
+	otel.SetTracerProvider(tp)
+
+	target, err := url.Parse(realm.Spec.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	proxy := proxy{
+		failedRequests: failedRequests,
+		scheme:         target.Scheme,
+		host:           target.Host,
+		path:           target.Path,
+		client: &http.Client{
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
+		},
+	}
+
+	// dynamically select available tcp port
+	socket, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		http.Serve(socket, otelhttp.NewHandler(&proxy, "k8skeycloak-controller"))
+	}()
+
+	return socket, nil
+}
+
+type proxy struct {
+	failedRequests chan infrav1beta1.RequestStatus
+	scheme         string
+	host           string
+	path           string
+	client         *http.Client
+}
+
+func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	clone := r.Clone(context.TODO())
+	clone.URL.Scheme = p.scheme
+	clone.URL.Host = p.host
+	clone.URL.Path = fmt.Sprintf("%s%s", p.path, r.URL.Path)
+	clone.RequestURI = ""
+
+	// send request to proxy target
+	res, err := p.client.Do(clone)
+	if err != nil {
+		p.failedRequests <- infrav1beta1.RequestStatus{
+			Verb:  clone.Method,
+			URL:   clone.URL.String(),
+			Error: err.Error(),
+		}
+		return
+	}
+
+	var buf bytes.Buffer
+	tee := io.TeeReader(res.Body, &buf)
+
+	for k, v := range res.Header {
+		for _, h := range v {
+			w.Header().Add(k, h)
+		}
+	}
+
+	w.WriteHeader(res.StatusCode)
+	io.Copy(w, tee)
+
+	if res.StatusCode >= 400 {
+		p.failedRequests <- infrav1beta1.RequestStatus{
+			Verb:         clone.Method,
+			URL:          clone.URL.String(),
+			ResponseCode: res.StatusCode,
+			ResponseBody: buf.String(),
+		}
+	}
+
+	res.Body.Close()
 }
 
 func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
-	// Fetch the KeycloakRealm instance
 	var clients infrav1beta1.KeycloakClientList
 	err := r.Client.List(ctx, &clients, client.InNamespace(realm.Namespace))
 	if err != nil {
@@ -345,6 +490,12 @@ func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, re
 
 	for _, client := range clients.Items {
 		if matches(realm.Labels, client.Spec.RealmSelector) {
+			realm.Status.SubResourceCatalog = append(realm.Status.SubResourceCatalog, infrav1beta1.ResourceReference{
+				Kind:       client.Kind,
+				Name:       client.Name,
+				APIVersion: client.APIVersion,
+			})
+
 			realm.Spec.Realm.Clients = append(realm.Spec.Realm.Clients, client.Spec.Client)
 		}
 	}
@@ -353,7 +504,6 @@ func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, re
 }
 
 func (r *KeycloakRealmReconciler) extendRealmWithUsers(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
-	// Fetch the KeycloakRealm instance
 	var users infrav1beta1.KeycloakUserList
 	err := r.Client.List(ctx, &users, client.InNamespace(realm.Namespace))
 	if err != nil {
@@ -362,7 +512,13 @@ func (r *KeycloakRealmReconciler) extendRealmWithUsers(ctx context.Context, real
 
 	for _, user := range users.Items {
 		if matches(realm.Labels, user.Spec.RealmSelector) {
-			realm.Spec.Realm.Users = append(realm.Spec.Realm.Users, &user.Spec.User)
+			realm.Status.SubResourceCatalog = append(realm.Status.SubResourceCatalog, infrav1beta1.ResourceReference{
+				Kind:       user.Kind,
+				Name:       user.Name,
+				APIVersion: user.APIVersion,
+			})
+
+			realm.Spec.Realm.Users = append(realm.Spec.Realm.Users, user.Spec.User)
 		}
 	}
 

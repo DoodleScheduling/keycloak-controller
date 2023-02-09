@@ -1518,7 +1518,6 @@ spec:
                 description: Version is the keycloak version
                 type: string
             required:
-            - address
             - realm
             - version
             type: object
@@ -1595,13 +1594,48 @@ spec:
                   type: object
                 type: array
               lastExececutionOutput:
-                description: LastExececutionOutput is the stdout dump of keycloak-config-cli
+                description: LastExececutionOutput failed requests
+                type: string
+              lastFailedRequests:
+                description: LastFailedRequests failed requests
+                items:
+                  description: RequestStatus knows details about a keycloak API request
+                  properties:
+                    error:
+                      type: string
+                    responseBody:
+                      type: string
+                    responseCode:
+                      type: integer
+                    url:
+                      type: string
+                    verb:
+                      type: string
+                  type: object
+                type: array
+              lastReconcileDuration:
+                description: LastReconcileDuration is the total time the reconcile
+                  of the realm took
                 type: string
               observedGeneration:
                 description: ObservedGeneration is the last generation reconciled
                   by the controller
                 format: int64
                 type: integer
+              subResourceCatalog:
+                description: SubResourceCatalog holds references to all sub resources
+                  including KeycloakClient and KeycloakUser associated with this realm
+                items:
+                  description: ResourceReference metadata to lookup another resource
+                  properties:
+                    apiVersion:
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                  type: object
+                type: array
             type: object
         type: object
     served: true

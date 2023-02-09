@@ -14,8 +14,7 @@ type KeycloakUser struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   KeycloakUserSpec   `json:"spec,omitempty"`
-	Status KeycloakUserStatus `json:"status,omitempty"`
+	Spec KeycloakUserSpec `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -29,37 +28,6 @@ type KeycloakUserList struct {
 
 func init() {
 	SchemeBuilder.Register(&KeycloakUser{}, &KeycloakUserList{})
-}
-
-// KeycloakUserStatus defines the observed state of KeycloakUser
-type KeycloakUserStatus struct {
-	// Conditions holds the conditions for the KeycloakUser.
-	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
-
-	// ObservedGeneration is the last generation reconciled by the controller
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-
-	// LastExececutionOutput is the stdout dump of keycloak-config-cli
-	// +optional
-	LastExececutionOutput string `json:"lastExececutionOutput,omitempty"`
-}
-
-// KeycloakUserNotReady
-func KeycloakUserNotReady(realm KeycloakUser, reason, message string) KeycloakUser {
-	setResourceCondition(&realm, ReadyCondition, metav1.ConditionFalse, reason, message)
-	return realm
-}
-
-// KeycloakUserReady
-func KeycloakUserReady(realm KeycloakUser, reason, message string) KeycloakUser {
-	setResourceCondition(&realm, ReadyCondition, metav1.ConditionTrue, reason, message)
-	return realm
-}
-
-// GetStatusConditions returns a pointer to the Status.Conditions slice
-func (in *KeycloakUser) GetStatusConditions() *[]metav1.Condition {
-	return &in.Status.Conditions
 }
 
 // KeycloakUserSpec defines the desired state of KeycloakUser.
@@ -120,6 +88,7 @@ type KeycloakAPIUser struct {
 
 	DisableableCredentialTypes []string `json:"disableableCredentialTypes,omitempty"`
 	ServiceAccountClientId     string   `json:"serviceAccountClientId,omitempty"`
+	TOTP                       bool     `json:"totp,omitempty"`
 }
 
 type KeycloakCredential struct {

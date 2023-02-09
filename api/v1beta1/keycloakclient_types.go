@@ -11,8 +11,7 @@ type KeycloakClient struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   KeycloakClientSpec   `json:"spec,omitempty"`
-	Status KeycloakClientStatus `json:"status,omitempty"`
+	Spec KeycloakClientSpec `json:"spec,omitempty"`
 }
 
 // KeycloakClientList contains a list of KeycloakClient.
@@ -35,21 +34,7 @@ type KeycloakClientSpec struct {
 	RealmSelector *metav1.LabelSelector `json:"realmSelector"`
 	// Keycloak Client REST object.
 	// +kubebuilder:validation:Required
-	Client *KeycloakAPIClient `json:"client"`
-	// Client Roles
-	// +optional
-	// +listType=map
-	// +listMapKey=name
-	Roles []RoleRepresentation `json:"roles,omitempty"`
-	// Scope Mappings
-	// +optional
-	ScopeMappings *MappingsRepresentation `json:"scopeMappings,omitempty"`
-	// Service account realm roles for this client.
-	// +optional
-	ServiceAccountRealmRoles []string `json:"serviceAccountRealmRoles,omitempty"`
-	// Service account client roles for this client.
-	// +optional
-	ServiceAccountClientRoles map[string][]string `json:"serviceAccountClientRoles,omitempty"`
+	Client KeycloakAPIClient `json:"client"`
 }
 
 // https://www.keycloak.org/docs-api/11.0/rest-api/index.html#_mappingsrepresentation
@@ -371,19 +356,4 @@ type KeycloakScope struct {
 	// Resources.
 	// +optional
 	Resources []KeycloakResource `json:"resources,omitempty"`
-}
-
-// KeycloakClientStatus defines the observed state of KeycloakClient
-// +k8s:openapi-gen=true
-type KeycloakClientStatus struct {
-	// Conditions holds the conditions for the KeycloakRealm.
-	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
-
-	// ObservedGeneration is the last generation reconciled by the controller
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-
-	// LastExececutionOutput is the stdout dump of keycloak-config-cli
-	// +optional
-	LastExececutionOutput string `json:"lastExececutionOutput,omitempty"`
 }
