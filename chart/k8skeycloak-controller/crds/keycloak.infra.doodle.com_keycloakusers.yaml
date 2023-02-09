@@ -168,6 +168,8 @@ spec:
                     type: array
                   serviceAccountClientId:
                     type: string
+                  totp:
+                    type: boolean
                   username:
                     description: User Name.
                     type: string
