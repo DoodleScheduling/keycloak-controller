@@ -123,6 +123,7 @@ Available env variables:
 | `CONCURRENT` | The number of concurrent reconcile workers.  | `4` |
 | `ASSETS_PATH` | The directory where to look for keycloak-config-cli | `/assets` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | The gRPC opentelemtry-collector endpoint uri | `` |
+| `OTEL_CONSOLE_EXPORTER` | By setting this to `true` the traces are also exported to stdout | ``` |
 
 **Note:** The proxy implements opentelemetry tracing, see [further possible env](https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/) variables to configure it.
 
