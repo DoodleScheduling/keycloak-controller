@@ -17,12 +17,21 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/propagators/b3"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -142,9 +151,57 @@ func main() {
 
 	// +kubebuilder:scaffold:builder
 
+	tp, err := createOtelProvider()
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			setupLog.Error(err, "failed to shutdown trace provider")
+		}
+	}()
+
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func createOtelProvider() (*trace.TracerProvider, error) {
+	resources, err := resource.New(context.Background(),
+		resource.WithFromEnv(),
+		resource.WithProcess(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating otlp trace resources: %w", err)
+	}
+
+	client := otlptracegrpc.NewClient()
+	exporter, err := otlptrace.New(context.Background(), client)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating otlp trace exporter: %w", err)
+	}
+
+	opts := []trace.TracerProviderOption{
+		trace.WithBatcher(exporter),
+		trace.WithResource(resources),
+	}
+
+	if os.Getenv("OTEL_CONSOLE_EXPORTER") == "true" {
+		stdoutExporter, err := stdouttrace.New(
+			stdouttrace.WithWriter(os.Stdout),
+			stdouttrace.WithPrettyPrint(),
+			stdouttrace.WithoutTimestamps(),
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		opts = append(opts, trace.WithBatcher(stdoutExporter))
+	}
+
+	tp := trace.NewTracerProvider(opts...)
+
+	otel.SetTextMapPropagator(b3.New())
+	otel.SetTracerProvider(tp)
+	return tp, nil
 }

@@ -34,13 +34,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/contrib/propagators/b3"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -376,40 +370,13 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 }
 
 func createProxy(realm infrav1beta1.KeycloakRealm, logger logr.Logger, failedRequests chan infrav1beta1.RequestStatus) (net.Listener, error) {
-	resources, err := resource.New(context.Background(),
-		resource.WithFromEnv(),
-		resource.WithProcess(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed creating otlp trace resources: %w", err)
-	}
-
-	client := otlptracegrpc.NewClient()
-	exporter, err := otlptrace.New(context.Background(), client)
-	if err != nil {
-		return nil, fmt.Errorf("failed creating otlp trace exporter: %w", err)
-	}
-
-	tp := trace.NewTracerProvider(
-		trace.WithBatcher(exporter),
-		trace.WithResource(resources),
-	)
-
-	otel.SetTextMapPropagator(b3.New())
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			logger.Error(err, "failed to shutdown trace provider")
-		}
-	}()
-
-	otel.SetTracerProvider(tp)
-
 	target, err := url.Parse(realm.Spec.Address)
 	if err != nil {
 		return nil, err
 	}
 
 	proxy := proxy{
+		realm:          realm,
 		failedRequests: failedRequests,
 		scheme:         target.Scheme,
 		host:           target.Host,
