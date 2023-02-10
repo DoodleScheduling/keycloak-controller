@@ -158,6 +158,10 @@ func main() {
 		}
 	}()
 
+	if err != nil {
+		setupLog.Error(err, "failed to setup trace provider")
+	}
+
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
