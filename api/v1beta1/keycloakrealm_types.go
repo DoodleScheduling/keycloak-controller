@@ -52,7 +52,7 @@ func init() {
 // KeycloakRealmSpec defines the desired state of KeycloakRealm
 type KeycloakRealmSpec struct {
 	// +required
-	Address string `json:"address"`
+	Address string `json:"address,omitempty"`
 
 	// Contains a credentials set of a user with enough permission to manage keycloak
 	// +optional
@@ -103,9 +103,35 @@ type KeycloakRealmStatus struct {
 	// ObservedGeneration is the last generation reconciled by the controller
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// LastExececutionOutput is the stdout dump of keycloak-config-cli
+	// LastExececutionOutput failed requests
 	// +optional
 	LastExececutionOutput string `json:"lastExececutionOutput,omitempty"`
+
+	// LastReconcileDuration is the total time the reconcile of the realm took
+	LastReconcileDuration metav1.Duration `json:"lastReconcileDuration,omitempty"`
+
+	// LastFailedRequests failed requests
+	// +optional
+	LastFailedRequests []RequestStatus `json:"lastFailedRequests,omitempty"`
+
+	// SubResourceCatalog holds references to all sub resources including KeycloakClient and KeycloakUser associated with this realm
+	SubResourceCatalog []ResourceReference `json:"subResourceCatalog,omitempty"`
+}
+
+// ResourceReference metadata to lookup another resource
+type ResourceReference struct {
+	Kind       string `json:"kind,omitempty"`
+	Name       string `json:"name,omitempty"`
+	APIVersion string `json:"apiVersion,omitempty"`
+}
+
+// RequestStatus knows details about a keycloak API request
+type RequestStatus struct {
+	URL          string `json:"url,omitempty"`
+	Verb         string `json:"verb,omitempty"`
+	ResponseCode int    `json:"responseCode,omitempty"`
+	ResponseBody string `json:"responseBody,omitempty"`
+	Error        string `json:"error,omitempty"`
 }
 
 // KeycloakRealmNotReady
@@ -146,16 +172,16 @@ type KeycloakAPIRealm struct {
 	PasswordPolicy string `json:"passwordPolicy,omitempty"`
 	// A set of Keycloak Users.
 	// +optional
-	Users []*KeycloakAPIUser `json:"users,omitempty"`
+	Users []KeycloakAPIUser `json:"users,omitempty"`
 	// A set of Keycloak Clients.
 	// +optional
-	Clients []*KeycloakAPIClient `json:"clients,omitempty"`
+	Clients []KeycloakAPIClient `json:"clients,omitempty"`
 	// A set of Identity Providers.
 	// +optional
-	IdentityProviders []*KeycloakIdentityProvider `json:"identityProviders,omitempty"`
+	IdentityProviders []KeycloakIdentityProvider `json:"identityProviders,omitempty"`
 	// A set of Identity Provider Mappers.
 	// +optional
-	IdentityProviderMappers []*KeycloakIdentityProviderMapper `json:"identityProviderMappers,omitempty"`
+	IdentityProviderMappers []KeycloakIdentityProviderMapper `json:"identityProviderMappers,omitempty"`
 	// A set of Event Listeners.
 	// +optional
 	EventsListeners []string `json:"eventsListeners,omitempty"`

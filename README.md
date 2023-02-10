@@ -122,6 +122,9 @@ Available env variables:
 | `NAMESPACES` | The controller listens by default for all namespaces. This may be limited to a comma delimted list of dedicated namespaces. | `` |
 | `CONCURRENT` | The number of concurrent reconcile workers.  | `4` |
 | `ASSETS_PATH` | The directory where to look for keycloak-config-cli | `/assets` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | The gRPC opentelemtry-collector endpoint uri | `` |
+
+**Note:** The proxy implements opentelemetry tracing, see [further possible env](https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/) variables to configure it.
 
 ## Dealing with managed realms
 
