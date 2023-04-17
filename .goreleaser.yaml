@@ -33,7 +33,7 @@ sboms:
 dockers:
 - image_templates:
   - ghcr.io/doodlescheduling/{{ .ProjectName }}:v{{ .Version }}-amd64
-  dockerfile: Dockerfile.release
+  dockerfile: Dockerfile
   use: buildx
   extra_files:
   - assets
@@ -52,7 +52,7 @@ dockers:
 - image_templates: 
   - ghcr.io/doodlescheduling/{{ .ProjectName }}:v{{ .Version }}-arm64v8
   goarch: arm64
-  dockerfile: Dockerfile.release
+  dockerfile: Dockerfile
   use: buildx
   extra_files:
   - assets

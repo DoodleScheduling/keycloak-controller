@@ -49,9 +49,7 @@ jobs:
           fi
       - name: Build container image
         run: |
-          make docker-build BUILD_PLATFORMS=linux/amd64 \
-            BUILD_ARGS="--cache-from=type=local,src=/tmp/.buildx-cache \
-            --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max"
+          make docker-build
       - name: Create image tarball
         run: |
           docker save --output k8skeycloak-controller-container.tar k8skeycloak-controller:latest
@@ -80,11 +78,9 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 #v3.4.0
         with:
-          go-version: 1.19.x
+          go-version: 1.20.x
       - name: Setup Kubernetes
         uses: engineerd/setup-kind@aa272fe2a7309878ffc2a81c56cfe3ef108ae7d0 #v0.5.0
-        with:
-          version: v0.17.0
       - name: Download k8skeycloak-controller container
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a #v3.0.2
         with:
