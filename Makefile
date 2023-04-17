@@ -88,7 +88,7 @@ api-docs: gen-crd-api-reference-docs
 	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir=./api/v1beta1 -config=./hack/api-docs/config.json -template-dir=./hack/api-docs/template -out-file=./docs/api/v1beta1.md
 
 .PHONY: docker-build
-docker-build:
+docker-build: build
 	docker build -t ${IMG} .
 
 .PHONY: docker-push
