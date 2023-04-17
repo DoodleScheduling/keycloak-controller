@@ -81,6 +81,8 @@ jobs:
           go-version: 1.20.x
       - name: Setup Kubernetes
         uses: engineerd/setup-kind@aa272fe2a7309878ffc2a81c56cfe3ef108ae7d0 #v0.5.0
+        with:
+          version: v0.17.0
       - name: Download k8skeycloak-controller container
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a #v3.0.2
         with:
@@ -92,6 +94,7 @@ jobs:
           docker image ls -a
       - name: Setup Kustomize
         uses: imranismail/setup-kustomize@6691bdeb1b0a3286fb7f70fd1423c10e81e5375f # v2.0.0
+
       - name: Run test
         run: |
           make kind-test TEST_PROFILE=${{ matrix.profile }}
