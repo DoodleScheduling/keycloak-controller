@@ -71,7 +71,7 @@ test: manifests generate fmt vet tidy envtest ## Run tests.
 
 .PHONY: build
 build: generate fmt vet tidy ## Build manager binary.
-	go build -o manager main.go
+	CGO_ENABLED=0 go build -o manager main.go
 
 .PHONY: run
 run: manifests generate fmt vet tidy ## Run a controller from your host.
