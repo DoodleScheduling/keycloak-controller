@@ -71,7 +71,7 @@ test: manifests generate fmt vet tidy envtest ## Run tests.
 
 .PHONY: build
 build: generate fmt vet tidy ## Build manager binary.
-	go build -o bin/manager main.go
+	CGO_ENABLED=0 go build -o manager main.go
 
 .PHONY: run
 run: manifests generate fmt vet tidy ## Run a controller from your host.
@@ -88,7 +88,7 @@ api-docs: gen-crd-api-reference-docs
 	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir=./api/v1beta1 -config=./hack/api-docs/config.json -template-dir=./hack/api-docs/template -out-file=./docs/api/v1beta1.md
 
 .PHONY: docker-build
-docker-build:
+docker-build: build
 	docker build -t ${IMG} .
 
 .PHONY: docker-push

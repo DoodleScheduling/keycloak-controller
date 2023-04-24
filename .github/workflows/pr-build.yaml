@@ -49,9 +49,7 @@ jobs:
           fi
       - name: Build container image
         run: |
-          make docker-build BUILD_PLATFORMS=linux/amd64 \
-            BUILD_ARGS="--cache-from=type=local,src=/tmp/.buildx-cache \
-            --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max"
+          make docker-build
       - name: Create image tarball
         run: |
           docker save --output k8skeycloak-controller-container.tar k8skeycloak-controller:latest
@@ -80,7 +78,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 #v3.4.0
         with:
-          go-version: 1.19.x
+          go-version: 1.20.x
       - name: Setup Kubernetes
         uses: engineerd/setup-kind@aa272fe2a7309878ffc2a81c56cfe3ef108ae7d0 #v0.5.0
         with:
@@ -96,6 +94,7 @@ jobs:
           docker image ls -a
       - name: Setup Kustomize
         uses: imranismail/setup-kustomize@6691bdeb1b0a3286fb7f70fd1423c10e81e5375f # v2.0.0
+
       - name: Run test
         run: |
           make kind-test TEST_PROFILE=${{ matrix.profile }}
