@@ -9,7 +9,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.15.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.35.0
-	go.opentelemetry.io/contrib/propagators/b3 v1.14.0
+	go.opentelemetry.io/contrib/propagators/b3 v1.17.0
 	go.opentelemetry.io/otel v1.13.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.13.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.13.0
