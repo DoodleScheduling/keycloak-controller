@@ -125,4 +125,15 @@ prometheusRule:
   labels: {}
   rules: []
 
+kubeRBACProxy:
+  enabled: true
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["all"]
+    readOnlyRootFilesystem: true
+
+  resources: {}
+
 tolerations: []

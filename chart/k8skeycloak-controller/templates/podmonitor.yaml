@@ -18,7 +18,18 @@ metadata:
     {{- toYaml .Values.annotations | nindent 4 }}
 spec:
   podMetricsEndpoints:
-  - port: metrics
+  - path: {{ .Values.metricsPath }}
+    {{- if .Values.kubeRBACProxy.enabled }}
+    port: https
+    scheme: https
+    bearerTokenSecret:
+      key: token
+      name: {{ template "k8skeycloak-controller.serviceAccountName" . }}
+    tlsConfig:
+      insecureSkipVerify: true
+    {{- else }}
+    port: metrics
+    {{- end }}
     path: {{ .Values.metricsPath }}
     interval: {{ .Values.podMonitor.interval }}
     scrapeTimeout: {{ .Values.podMonitor.scrapeTimeout }}

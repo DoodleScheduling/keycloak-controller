@@ -50,6 +50,9 @@ spec:
         image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         args:
+        {{- if .Values.kubeRBACProxy.enabled }}
+        - --metrics-addr=127.0.0.1:9556
+        {{- end }}
         {{- if .Values.extraArgs }}
         {{- toYaml .Values.extraArgs | nindent 8 }}
         {{- end }}
@@ -76,6 +79,26 @@ spec:
           subPath: {{ .subPath }}
           {{- end }}
         {{- end }}
+      {{- if .Values.kubeRBACProxy.enabled }}
+      - args:
+          - --secure-listen-address=0.0.0.0:8443
+          - --upstream=http://127.0.0.1:{{ .Values.metricsPort }}
+          - --logtostderr=true
+          - --v=0
+        image: quay.io/brancz/kube-rbac-proxy:v0.14.0
+        imagePullPolicy: IfNotPresent
+        name: kube-rbac-proxy
+        ports:
+          - containerPort: 8443
+            name: https
+            protocol: TCP
+        resources:
+          {{- toYaml .Values.kubeRBACProxy.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.kubeRBACProxy.securityContext | nindent 10 }}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      {{- end }}
       {{- if .Values.extraContainers }}
       {{- toYaml .Values.extraContainers | nindent 6 }}
       {{- end }}
