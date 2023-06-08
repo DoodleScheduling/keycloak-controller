@@ -30,7 +30,6 @@ spec:
     {{- else }}
     port: metrics
     {{- end }}
-    path: {{ .Values.metricsPath }}
     interval: {{ .Values.podMonitor.interval }}
     scrapeTimeout: {{ .Values.podMonitor.scrapeTimeout }}
     {{- if .Values.podMonitor.metricRelabelings }}
