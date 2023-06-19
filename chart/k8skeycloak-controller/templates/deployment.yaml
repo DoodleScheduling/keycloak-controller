@@ -81,17 +81,17 @@ spec:
         {{- end }}
       {{- if .Values.kubeRBACProxy.enabled }}
       - args:
-          - --secure-listen-address=0.0.0.0:8443
-          - --upstream=http://127.0.0.1:{{ .Values.metricsPort }}
-          - --logtostderr=true
-          - --v=0
-        image: quay.io/brancz/kube-rbac-proxy:v0.14.0
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:{{ .Values.metricsPort }}
+        - --logtostderr=true
+        - --v=0
+        image: {{ .Values.kubeRBACProxy.image }}
         imagePullPolicy: IfNotPresent
         name: kube-rbac-proxy
         ports:
-          - containerPort: 8443
-            name: https
-            protocol: TCP
+        - containerPort: 8443
+          name: https
+          protocol: TCP
         resources:
           {{- toYaml .Values.kubeRBACProxy.resources | nindent 10 }}
         securityContext:
@@ -108,6 +108,8 @@ spec:
         secret:
           secretName: {{ .secretName }}
       {{- end }}
+      securityContext:
+      {{- toYaml .Values.podSecurityContext | nindent 8 }}
       affinity:
         {{- toYaml .Values.affinity | nindent 8 }}
       imagePullSecrets:
