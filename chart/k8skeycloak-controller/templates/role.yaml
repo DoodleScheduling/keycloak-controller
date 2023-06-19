@@ -10,13 +10,6 @@ metadata:
   annotations:
     {{- toYaml .Values.annotations | nindent 4 }}
 rules:
-{{- if .Values.podSecurityPolicy.enabled }}
-  - apiGroups: ['extensions']
-    resources: ['podsecuritypolicies']
-    verbs:     ['use']
-    resourceNames:
-    - {{ template "k8skeycloak-controller.fullname" . }}
-{{- end }}
   # leader election
   - apiGroups:
       - ""
