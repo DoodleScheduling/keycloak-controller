@@ -23,7 +23,6 @@ import (
 	"time"
 
 	infrav1beta1 "github.com/DoodleScheduling/k8skeycloak-controller/api/v1beta1"
-	infrav1beta2 "github.com/DoodleScheduling/k8skeycloak-controller/api/v1beta2"
 	"github.com/DoodleScheduling/k8skeycloak-controller/internal/controllers"
 	"github.com/DoodleScheduling/k8skeycloak-controller/internal/otelsetup"
 	"github.com/fluxcd/pkg/runtime/client"
@@ -55,7 +54,7 @@ func init() {
 
 	_ = corev1.AddToScheme(scheme)
 	_ = infrav1beta1.AddToScheme(scheme)
-	_ = infrav1beta2.AddToScheme(scheme)
+	_ = infrav1beta1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -124,9 +123,9 @@ func main() {
 		LeaderElectionID:              leaderElectionId,
 		Cache: ctrlcache.Options{
 			ByObject: map[ctrlclient.Object]ctrlcache.ByObject{
-				&infrav1beta2.KeycloakRealm{}:  {Label: watchSelector},
-				&infrav1beta2.KeycloakClient{}: {Label: watchSelector},
-				&infrav1beta2.KeycloakUser{}:   {Label: watchSelector},
+				&infrav1beta1.KeycloakRealm{}:  {Label: watchSelector},
+				&infrav1beta1.KeycloakClient{}: {Label: watchSelector},
+				&infrav1beta1.KeycloakUser{}:   {Label: watchSelector},
 			},
 			Namespaces: []string{watchNamespace},
 		},

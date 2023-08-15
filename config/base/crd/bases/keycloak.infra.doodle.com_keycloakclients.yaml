@@ -601,6 +601,7 @@ spec:
                 type: object
               realmSelector:
                 description: Selector for looking up KeycloakRealm Custom Resources.
+                  This field is deprecated
                 properties:
                   matchExpressions:
                     description: matchExpressions is a list of label selector requirements.

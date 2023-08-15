@@ -31,6 +31,7 @@ func init() {
 type KeycloakClientSpec struct {
 	// Selector for looking up KeycloakRealm Custom Resources.
 	// +kubebuilder:validation:Required
+	// This field is deprecated
 	RealmSelector *metav1.LabelSelector `json:"realmSelector"`
 	// Keycloak Client REST object.
 	// +kubebuilder:validation:Required

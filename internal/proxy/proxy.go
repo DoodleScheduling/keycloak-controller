@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -25,9 +26,10 @@ type proxy struct {
 	host           string
 	path           string
 	client         *http.Client
+	secrets        []string
 }
 
-func New(realm infrav1beta1.KeycloakRealm, logger logr.Logger, failedRequests chan infrav1beta1.RequestStatus) (net.Listener, error) {
+func New(realm infrav1beta1.KeycloakRealm, logger logr.Logger, failedRequests chan infrav1beta1.RequestStatus, secrets []string) (net.Listener, error) {
 	target, err := url.Parse(realm.Spec.Address)
 	if err != nil {
 		return nil, err
@@ -39,6 +41,7 @@ func New(realm infrav1beta1.KeycloakRealm, logger logr.Logger, failedRequests ch
 		failedRequests: failedRequests,
 		scheme:         target.Scheme,
 		host:           target.Host,
+		secrets:        secrets,
 		path:           target.Path,
 		client: &http.Client{
 			Transport: otelhttp.NewTransport(http.DefaultTransport),
@@ -74,7 +77,7 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	span := oteltrace.SpanFromContext(cxt)
 	span.SetAttributes(attribute.String("realm", p.realm.Name), attribute.String("namespace", p.realm.Namespace))
 
-	p.logger.V(2).Info("http request sent", "uri", r.URL.String(), "method", r.Method, "body", reqBuf.String())
+	p.logger.V(2).Info("http request sent", "uri", r.URL.String(), "method", r.Method, "body", protectSecrets(reqBuf.String(), p.secrets))
 
 	res, err := p.client.Do(clone)
 	if err != nil {
@@ -111,4 +114,12 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res.Body.Close()
+}
+
+func protectSecrets(s string, secrets []string) string {
+	for _, secret := range secrets {
+		s = strings.ReplaceAll(s, secret, "***")
+	}
+
+	return s
 }

@@ -117,11 +117,11 @@ func (r *KeycloakRealmReconciler) SetupWithManager(mgr ctrl.Manager, opts Keyclo
 		).
 		Watches(
 			&infrav1beta1.KeycloakClient{},
-			handler.EnqueueRequestsFromMapFunc(r.requestsForKeycloakClientChange),
+			handler.EnqueueRequestsFromMapFunc(r.requestsForChangeBySelector),
 		).
 		Watches(
 			&infrav1beta1.KeycloakUser{},
-			handler.EnqueueRequestsFromMapFunc(r.requestsForKeycloakUserChange),
+			handler.EnqueueRequestsFromMapFunc(r.requestsForChangeBySelector),
 		).
 		WithOptions(controller.Options{MaxConcurrentReconciles: opts.MaxConcurrentReconciles}).
 		Complete(r)
@@ -149,43 +149,16 @@ func (r *KeycloakRealmReconciler) requestsForSecretChange(ctx context.Context, o
 	return reqs
 }
 
-func (r *KeycloakRealmReconciler) requestsForKeycloakClientChange(ctx context.Context, o client.Object) []reconcile.Request {
-	client, ok := o.(*infrav1beta1.KeycloakClient)
-	if !ok {
-		panic(fmt.Sprintf("expected a KeycloakClient, got %T", o))
-	}
-
+func (r *KeycloakRealmReconciler) requestsForChangeBySelector(ctx context.Context, o client.Object) []reconcile.Request {
 	var list infrav1beta1.KeycloakRealmList
-	if err := r.List(ctx, &list); err != nil {
+	if err := r.List(ctx, &list, client.InNamespace(o.GetNamespace())); err != nil {
 		return nil
 	}
 
 	var reqs []reconcile.Request
 	for _, realm := range list.Items {
-		if matches(realm.Labels, client.Spec.RealmSelector) {
-			r.Log.Info("change of keycloak client referencing realm detected", "namespace", realm.GetNamespace(), "realm-name", realm.GetName(), "client-name", client.GetName())
-			reqs = append(reqs, reconcile.Request{NamespacedName: objectKey(&realm)})
-		}
-	}
-
-	return reqs
-}
-
-func (r *KeycloakRealmReconciler) requestsForKeycloakUserChange(ctx context.Context, o client.Object) []reconcile.Request {
-	user, ok := o.(*infrav1beta1.KeycloakUser)
-	if !ok {
-		panic(fmt.Sprintf("expected a KeycloakUser, got %T", o))
-	}
-
-	var list infrav1beta1.KeycloakRealmList
-	if err := r.List(ctx, &list); err != nil {
-		return nil
-	}
-
-	var reqs []reconcile.Request
-	for _, realm := range list.Items {
-		if matches(realm.Labels, user.Spec.RealmSelector) {
-			r.Log.Info("change of keycloak user referencing realm detected", "namespace", realm.GetNamespace(), "realm-name", realm.GetName(), "user-name", user.GetName())
+		if matches(o.GetLabels(), realm.Spec.ResourceSelector) {
+			r.Log.Info("change of referenced resource detected", "namespace", o.GetNamespace(), "name", o.GetName(), "kind", o.GetObjectKind().GroupVersionKind().Kind, "realm", realm.GetName())
 			reqs = append(reqs, reconcile.Request{NamespacedName: objectKey(&realm)})
 		}
 	}
@@ -254,29 +227,10 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	return res, err
 }
 
-func (r *KeycloakRealmReconciler) locateJARByVersion(version string) (string, error) {
-	p := os.Getenv("ASSETS_PATH")
-	if p == "" {
-		p = "."
-	}
-
-	p = fmt.Sprintf("%s/keycloak-config-cli-%s.jar", p, version)
-
-	_, err := os.Stat(p)
-	if err == nil {
-		return p, nil
-	}
-
-	return "", err
-}
-
 func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
-	jar, err := r.locateJARByVersion(realm.Spec.Version)
-	if err != nil {
-		return realm, err
-	}
-
 	var usr, pw string
+	var err error
+
 	if realm.Spec.AuthSecret != nil {
 		usr, pw, err = getSecret(ctx, r.Client, realm)
 		if err != nil {
@@ -303,9 +257,40 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 		return realm, err
 	}
 
+	return r.reconcileConfigCLI(ctx, realm, logger, usr, pw)
+}
+
+func (r *KeycloakRealmReconciler) locateJARByVersion(version string) (string, error) {
+	p := os.Getenv("ASSETS_PATH")
+	if p == "" {
+		p = "."
+	}
+
+	p = fmt.Sprintf("%s/keycloak-config-cli-%s.jar", p, version)
+
+	_, err := os.Stat(p)
+	if err == nil {
+		return p, nil
+	}
+
+	return "", err
+}
+
+func (r *KeycloakRealmReconciler) reconcileConfigCLI(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger, usr, pw string) (infrav1beta1.KeycloakRealm, error) {
+	jar, err := r.locateJARByVersion(realm.Spec.Version)
+	if err != nil {
+		return realm, err
+	}
+
 	realm.Status.LastFailedRequests = []infrav1beta1.RequestStatus{}
 	failedRequests := make(chan infrav1beta1.RequestStatus)
-	socket, err := proxy.New(realm, logger, failedRequests)
+
+	raw, secrets, err := r.substituteSecrets(ctx, realm)
+	if err != nil {
+		return realm, err
+	}
+
+	socket, err := proxy.New(realm, logger, failedRequests, secrets)
 	if err != nil {
 		return realm, err
 	}
@@ -328,11 +313,6 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 
 	exec := exec.Command("/usr/bin/java", cmd...)
 	stdin, err := exec.StdinPipe()
-	if err != nil {
-		return realm, err
-	}
-
-	raw, err := r.substituteSecrets(ctx, realm)
 	if err != nil {
 		return realm, err
 	}
@@ -362,21 +342,32 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 
 func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
 	var clients infrav1beta1.KeycloakClientList
-	err := r.Client.List(ctx, &clients, client.InNamespace(realm.Namespace))
+	selector, err := metav1.LabelSelectorAsSelector(realm.Spec.ResourceSelector)
+	if err != nil {
+		return realm, err
+	}
+
+	instanceSelector, err := metav1.LabelSelectorAsSelector(realm.Spec.ResourceSelector)
+	if err != nil {
+		return realm, err
+	}
+
+	req, _ := instanceSelector.Requirements()
+	selector.Add(req...)
+
+	err = r.Client.List(ctx, &clients, client.InNamespace(realm.Namespace), client.MatchingLabelsSelector{Selector: selector})
 	if err != nil {
 		return realm, err
 	}
 
 	for _, client := range clients.Items {
-		if matches(realm.Labels, client.Spec.RealmSelector) {
-			realm.Status.SubResourceCatalog = append(realm.Status.SubResourceCatalog, infrav1beta1.ResourceReference{
-				Kind:       client.Kind,
-				Name:       client.Name,
-				APIVersion: client.APIVersion,
-			})
+		realm.Status.SubResourceCatalog = append(realm.Status.SubResourceCatalog, infrav1beta1.ResourceReference{
+			Kind:       client.Kind,
+			Name:       client.Name,
+			APIVersion: client.APIVersion,
+		})
 
-			realm.Spec.Realm.Clients = append(realm.Spec.Realm.Clients, client.Spec.Client)
-		}
+		realm.Spec.Realm.Clients = append(realm.Spec.Realm.Clients, client.Spec.Client)
 	}
 
 	return realm, nil
@@ -384,21 +375,32 @@ func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, re
 
 func (r *KeycloakRealmReconciler) extendRealmWithUsers(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
 	var users infrav1beta1.KeycloakUserList
-	err := r.Client.List(ctx, &users, client.InNamespace(realm.Namespace))
+	selector, err := metav1.LabelSelectorAsSelector(realm.Spec.ResourceSelector)
+	if err != nil {
+		return realm, err
+	}
+
+	instanceSelector, err := metav1.LabelSelectorAsSelector(realm.Spec.ResourceSelector)
+	if err != nil {
+		return realm, err
+	}
+
+	req, _ := instanceSelector.Requirements()
+	selector.Add(req...)
+
+	err = r.Client.List(ctx, &users, client.InNamespace(realm.Namespace), client.MatchingLabelsSelector{Selector: selector})
 	if err != nil {
 		return realm, err
 	}
 
 	for _, user := range users.Items {
-		if matches(realm.Labels, user.Spec.RealmSelector) {
-			realm.Status.SubResourceCatalog = append(realm.Status.SubResourceCatalog, infrav1beta1.ResourceReference{
-				Kind:       user.Kind,
-				Name:       user.Name,
-				APIVersion: user.APIVersion,
-			})
+		realm.Status.SubResourceCatalog = append(realm.Status.SubResourceCatalog, infrav1beta1.ResourceReference{
+			Kind:       user.Kind,
+			Name:       user.Name,
+			APIVersion: user.APIVersion,
+		})
 
-			realm.Spec.Realm.Users = append(realm.Spec.Realm.Users, user.Spec.User)
-		}
+		realm.Spec.Realm.Users = append(realm.Spec.Realm.Users, user.Spec.User)
 	}
 
 	return realm, nil
@@ -425,10 +427,12 @@ func matches(labels map[string]string, selector *metav1.LabelSelector) bool {
 	return true
 }
 
-func (r *KeycloakRealmReconciler) substituteSecrets(ctx context.Context, realm infrav1beta1.KeycloakRealm) (string, error) {
+func (r *KeycloakRealmReconciler) substituteSecrets(ctx context.Context, realm infrav1beta1.KeycloakRealm) (string, []string, error) {
+	var secrets []string
+
 	b, err := json.Marshal(realm.Spec.Realm)
 	if err != nil {
-		return "", err
+		return "", secrets, err
 	}
 
 	var errors []error
@@ -450,15 +454,16 @@ func (r *KeycloakRealmReconciler) substituteSecrets(ctx context.Context, realm i
 			errors = append(errors, fmt.Errorf("field %s not found in secret %s", parts[2], parts[1]))
 			return parts[0]
 		} else {
+			secrets = append(secrets, string(val))
 			return string(val)
 		}
 	})
 
 	if len(errors) > 0 {
-		return str, errors[0]
+		return str, secrets, errors[0]
 	}
 
-	return str, nil
+	return str, secrets, nil
 }
 
 func getSecret(ctx context.Context, c client.Client, realm infrav1beta1.KeycloakRealm) (string, string, error) {
