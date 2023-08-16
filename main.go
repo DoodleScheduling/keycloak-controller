@@ -167,15 +167,17 @@ func main() {
 
 	// +kubebuilder:scaffold:builder
 
-	tp, err := otelsetup.Tracing(context.Background(), otelOptions)
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			setupLog.Error(err, "failed to shutdown trace provider")
-		}
-	}()
+	if otelOptions.Endpoint != "" {
+		tp, err := otelsetup.Tracing(context.Background(), otelOptions)
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				setupLog.Error(err, "failed to shutdown trace provider")
+			}
+		}()
 
-	if err != nil {
-		setupLog.Error(err, "failed to setup trace provider")
+		if err != nil {
+			setupLog.Error(err, "failed to setup trace provider")
+		}
 	}
 
 	setupLog.Info("starting manager")
