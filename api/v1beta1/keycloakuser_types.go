@@ -4,10 +4,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	UserFinalizer = "user.cleanup"
-)
-
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 type KeycloakUser struct {

@@ -110,22 +110,7 @@ Alternatively you may get the bundled manifests in each release to deploy it usi
 
 ## Configure the controller
 
-You may change base settings for the controller using env variables (or alternatively command line arguments).
-Available env variables:
-
-| Name  | Description | Default |
-|-------|-------------| --------|
-| `METRICS_ADDR` | The address of the metric endpoint binds to. | `:9556` |
-| `PROBE_ADDR` | The address of the probe endpoints binds to. | `:9557` |
-| `ENABLE_LEADER_ELECTION` | Enable leader election for controller manager. | `false` |
-| `LEADER_ELECTION_NAMESPACE` | Change the leader election namespace. This is by default the same where the controller is deployed. | `` |
-| `NAMESPACES` | The controller listens by default for all namespaces. This may be limited to a comma delimted list of dedicated namespaces. | `` |
-| `CONCURRENT` | The number of concurrent reconcile workers.  | `4` |
-| `ASSETS_PATH` | The directory where to look for keycloak-config-cli | `/assets` |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | The gRPC opentelemtry-collector endpoint uri | `` |
-| `OTEL_CONSOLE_EXPORTER` | By setting this to `true` the traces are also exported to stdout | ``` |
-
-**Note:** The proxy implements opentelemetry tracing, see [further possible env](https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/) variables to configure it.
+The controller is configured by arguments. For all possible arguments you may access the help using `-h`.
 
 ## Dealing with managed realms
 

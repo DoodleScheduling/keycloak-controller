@@ -75,7 +75,7 @@ build: generate fmt vet tidy ## Build manager binary.
 
 .PHONY: run
 run: manifests generate fmt vet tidy ## Run a controller from your host.
-	go run ./main.go
+	go run ./main.go --log-level=debug
 
 # Find or download gen-crd-api-reference-docs
 GEN_CRD_API_REFERENCE_DOCS = $(GOBIN)/gen-crd-api-reference-docs
@@ -136,7 +136,7 @@ kind-test: docker-build ## Deploy including test
 CONTROLLER_GEN = $(GOBIN)/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.10.0)
+	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.12.0)
 	cp config/base/crd/bases/* chart/k8skeycloak-controller/crds/
 
 GOLANGCI_LINT = $(GOBIN)/golangci-lint
