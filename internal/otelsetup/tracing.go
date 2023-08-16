@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	"google.golang.org/grpc/credentials"
 )
 
 func Tracing(ctx context.Context, opts Options) (*trace.TracerProvider, error) {
@@ -20,6 +21,14 @@ func Tracing(ctx context.Context, opts Options) (*trace.TracerProvider, error) {
 
 	if opts.Insecure {
 		grpcOptions = append(grpcOptions, otlptracegrpc.WithInsecure())
+	} else {
+		tlsOpts, err := opts.getTLSConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		grpcOptions = append(grpcOptions, otlptracegrpc.WithTLSCredentials(credentials.NewTLS(tlsOpts)))
+
 	}
 
 	exporter, err := otlptracegrpc.New(
@@ -48,6 +57,8 @@ func Tracing(ctx context.Context, opts Options) (*trace.TracerProvider, error) {
 			propagation.TraceContext{}, // W3C Trace Context format; https://www.w3.org/TR/trace-context/
 		),
 	)
+
+	otel.SetTracerProvider(provider)
 
 	return provider, nil
 }
