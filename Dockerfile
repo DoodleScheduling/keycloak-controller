@@ -1,4 +1,4 @@
-FROM amazoncorretto:11.0.20
+FROM amazoncorretto:17.0.8
 WORKDIR /
 COPY manager manager
 USER 65532:65532
