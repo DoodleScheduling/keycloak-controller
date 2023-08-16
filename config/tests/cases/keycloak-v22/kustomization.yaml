@@ -9,7 +9,7 @@ resources:
 helmCharts:
 - repo: https://codecentric.github.io/helm-charts
   name: keycloakx
-  version: 1.0.1
+  version: 2.2.1
   releaseName: keycloakx
   namespace: k8skeycloak-system
   valuesInline:
