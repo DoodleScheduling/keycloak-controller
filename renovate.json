@@ -1,7 +1,7 @@
 {
   "extends": ["config:base", "github>whitesource/merge-confidence:beta", ":semanticCommitTypeAll(chore)"],
   "prHourlyLimit": 50,
-  "prConcurrentLimit": 10, 
+  "prConcurrentLimit": 50, 
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
       "labels": [
