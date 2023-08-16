@@ -3,8 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.12.0
   name: keycloakusers.keycloak.infra.doodle.com
 spec:
   group: keycloak.infra.doodle.com
@@ -36,6 +35,7 @@ spec:
             properties:
               realmSelector:
                 description: Selector for looking up KeycloakUser Custom Resources.
+                  This field is deprecated
                 properties:
                   matchExpressions:
                     description: matchExpressions is a list of label selector requirements.

@@ -18,33 +18,31 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
-	"strings"
+	"time"
 
-	"github.com/spf13/pflag"
+	infrav1beta1 "github.com/DoodleScheduling/k8skeycloak-controller/api/v1beta1"
+	"github.com/DoodleScheduling/k8skeycloak-controller/internal/controllers"
+	"github.com/DoodleScheduling/k8skeycloak-controller/internal/otelsetup"
+	"github.com/fluxcd/pkg/runtime/client"
+	helper "github.com/fluxcd/pkg/runtime/controller"
+	"github.com/fluxcd/pkg/runtime/leaderelection"
+	"github.com/fluxcd/pkg/runtime/logger"
+	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"go.opentelemetry.io/contrib/propagators/b3"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
-	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
+	ctrlcache "sigs.k8s.io/controller-runtime/pkg/cache"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	infrav1beta1 "github.com/DoodleScheduling/k8skeycloak-controller/api/v1beta1"
-	"github.com/DoodleScheduling/k8skeycloak-controller/controllers"
 	// +kubebuilder:scaffold:imports
 )
+
+const controllerName = "k8skeycloak-controller"
 
 var (
 	scheme   = runtime.NewScheme()
@@ -56,63 +54,81 @@ func init() {
 
 	_ = corev1.AddToScheme(scheme)
 	_ = infrav1beta1.AddToScheme(scheme)
+	_ = infrav1beta1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
 var (
-	metricsAddr             = ":9556"
-	probesAddr              = ":9557"
-	enableLeaderElection    = false
-	leaderElectionNamespace string
-	namespaces              = ""
-	concurrent              = 4
+	metricsAddr             string
+	healthAddr              string
+	concurrent              int
+	gracefulShutdownTimeout time.Duration
+	clientOptions           client.Options
+	kubeConfigOpts          client.KubeConfigOptions
+	logOptions              logger.Options
+	leaderElectionOptions   leaderelection.Options
+	rateLimiterOptions      helper.RateLimiterOptions
+	watchOptions            helper.WatchOptions
+	otelOptions             otelsetup.Options
 )
 
 func main() {
-	flag.StringVar(&metricsAddr, "metrics-addr", metricsAddr, "The address of the metric endpoint binds to.")
-	flag.StringVar(&probesAddr, "probe-addr", probesAddr, "The address of the probe endpoints bind to.")
-	flag.BoolVar(&enableLeaderElection, "enable-leader-election", enableLeaderElection,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(&leaderElectionNamespace, "leader-election-namespace", leaderElectionNamespace,
-		"Specify a different leader election namespace. It will use the one where the controller is deployed by default.")
-	flag.StringVar(&namespaces, "namespaces", namespaces,
-		"The controller listens by default for all namespaces. This may be limited to a comma delimted list of dedicated namespaces.")
-	flag.IntVar(&concurrent, "concurrent", concurrent,
-		"The number of concurrent reconcile workers. By default this is 4.")
+	flag.StringVar(&metricsAddr, "metrics-addr", ":9556",
+		"The address the metric endpoint binds to.")
+	flag.StringVar(&healthAddr, "health-addr", ":9557",
+		"The address the health endpoint binds to.")
+	flag.IntVar(&concurrent, "concurrent", 4,
+		"The number of concurrent HelmRelease reconciles.")
+	flag.DurationVar(&gracefulShutdownTimeout, "graceful-shutdown-timeout", 600*time.Second,
+		"The duration given to the reconciler to finish before forcibly stopping.")
 
-	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	pflag.Parse()
-	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	clientOptions.BindFlags(flag.CommandLine)
+	logOptions.BindFlags(flag.CommandLine)
+	leaderElectionOptions.BindFlags(flag.CommandLine)
+	rateLimiterOptions.BindFlags(flag.CommandLine)
+	kubeConfigOpts.BindFlags(flag.CommandLine)
+	watchOptions.BindFlags(flag.CommandLine)
+	otelOptions.BindFlags(flag.CommandLine)
 
-	// Import flags into viper and bind them to env vars
-	// flags are converted to upper-case, - is replaced with _
-	err := viper.BindPFlags(pflag.CommandLine)
+	flag.Parse()
+	logger.SetLogger(logger.NewLogger(logOptions))
+
+	leaderElectionId := fmt.Sprintf("%s-%s", controllerName, "leader-election")
+	if watchOptions.LabelSelector != "" {
+		leaderElectionId = leaderelection.GenerateID(leaderElectionId, watchOptions.LabelSelector)
+	}
+
+	watchNamespace := ""
+	if !watchOptions.AllNamespaces {
+		watchNamespace = os.Getenv("RUNTIME_NAMESPACE")
+	}
+
+	watchSelector, err := helper.GetWatchSelector(watchOptions)
 	if err != nil {
-		setupLog.Error(err, "Failed parsing command line arguments")
+		setupLog.Error(err, "unable to configure watch label selector for manager")
 		os.Exit(1)
 	}
 
-	replacer := strings.NewReplacer("-", "_")
-	viper.SetEnvKeyReplacer(replacer)
-	viper.AutomaticEnv()
-
 	opts := ctrl.Options{
-		Scheme:                  scheme,
-		MetricsBindAddress:      viper.GetString("metrics-addr"),
-		HealthProbeBindAddress:  viper.GetString("probe-addr"),
-		Port:                    9443,
-		LeaderElection:          viper.GetBool("enable-leader-election"),
-		LeaderElectionNamespace: viper.GetString("leader-election-namespace"),
-		LeaderElectionID:        "1d722b99.doodle.com",
-	}
-
-	ns := strings.Split(viper.GetString("namespaces"), ",")
-	if len(ns) > 0 && ns[0] != "" {
-		opts.NewCache = cache.MultiNamespacedCacheBuilder(ns)
-		setupLog.Info("watching dedicated namespaces", "namespaces", ns)
-	} else {
-		setupLog.Info("watching all namespaces")
+		Scheme:                        scheme,
+		MetricsBindAddress:            metricsAddr,
+		HealthProbeBindAddress:        healthAddr,
+		LeaderElection:                leaderElectionOptions.Enable,
+		LeaderElectionReleaseOnCancel: leaderElectionOptions.ReleaseOnCancel,
+		LeaseDuration:                 &leaderElectionOptions.LeaseDuration,
+		RenewDeadline:                 &leaderElectionOptions.RenewDeadline,
+		RetryPeriod:                   &leaderElectionOptions.RetryPeriod,
+		GracefulShutdownTimeout:       &gracefulShutdownTimeout,
+		Port:                          9443,
+		LeaderElectionID:              leaderElectionId,
+		Cache: ctrlcache.Options{
+			ByObject: map[ctrlclient.Object]ctrlcache.ByObject{
+				&infrav1beta1.KeycloakRealm{}:  {Label: watchSelector},
+				&infrav1beta1.KeycloakClient{}: {Label: watchSelector},
+				&infrav1beta1.KeycloakUser{}:   {Label: watchSelector},
+			},
+			Namespaces: []string{watchNamespace},
+		},
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), opts)
@@ -151,7 +167,7 @@ func main() {
 
 	// +kubebuilder:scaffold:builder
 
-	tp, err := createOtelProvider()
+	tp, err := otelsetup.Tracing(context.Background(), otelOptions)
 	defer func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
 			setupLog.Error(err, "failed to shutdown trace provider")
@@ -167,45 +183,4 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
-}
-
-func createOtelProvider() (*trace.TracerProvider, error) {
-	resources, err := resource.New(context.Background(),
-		resource.WithFromEnv(),
-		resource.WithProcess(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed creating otlp trace resources: %w", err)
-	}
-
-	client := otlptracegrpc.NewClient()
-	exporter, err := otlptrace.New(context.Background(), client)
-	if err != nil {
-		return nil, fmt.Errorf("failed creating otlp trace exporter: %w", err)
-	}
-
-	opts := []trace.TracerProviderOption{
-		trace.WithBatcher(exporter),
-		trace.WithResource(resources),
-	}
-
-	if os.Getenv("OTEL_CONSOLE_EXPORTER") == "true" {
-		stdoutExporter, err := stdouttrace.New(
-			stdouttrace.WithWriter(os.Stdout),
-			stdouttrace.WithPrettyPrint(),
-			stdouttrace.WithoutTimestamps(),
-		)
-
-		if err != nil {
-			return nil, err
-		}
-
-		opts = append(opts, trace.WithBatcher(stdoutExporter))
-	}
-
-	tp := trace.NewTracerProvider(opts...)
-
-	otel.SetTextMapPropagator(b3.New())
-	otel.SetTracerProvider(tp)
-	return tp, nil
 }

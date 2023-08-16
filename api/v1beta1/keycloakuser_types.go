@@ -4,10 +4,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	UserFinalizer = "user.cleanup"
-)
-
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 type KeycloakUser struct {
@@ -35,6 +31,7 @@ func init() {
 type KeycloakUserSpec struct {
 	// Selector for looking up KeycloakUser Custom Resources.
 	// +kubebuilder:validation:Required
+	// This field is deprecated
 	RealmSelector *metav1.LabelSelector `json:"realmSelector,omitempty"`
 	// Keycloak User REST object.
 	// +kubebuilder:validation:Required

@@ -73,6 +73,9 @@ type KeycloakRealmSpec struct {
 	// Realm is the unstructured keycloak realm representation
 	// +required
 	Realm KeycloakAPIRealm `json:"realm"`
+
+	// ResourceSelector defines a selector to select keycloak resources associated with this realm
+	ResourceSelector *metav1.LabelSelector `json:"resourceSelector,omitempty"`
 }
 
 // SecretReference is a named reference to a secret which contains user credentials
