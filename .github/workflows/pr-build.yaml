@@ -130,20 +130,20 @@ jobs:
 
       - name: Create kind cluster
         uses: helm/kind-action@fa81e57adff234b2908110485695db0f181f3c67 # v1.7.0
-        if: steps.list-changed.outputs.changed == 'true'
 
       - name: Download k8skeycloak-controller container
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: k8skeycloak-controller-container
           path: /tmp
+
       - name: Load image
         run: |
           docker load --input /tmp/k8skeycloak-controller-container.tar
           docker image ls -a
           
       - name: Run chart-testing (install)
-        run: ct install --target-branch=master --chart-dirs chart --set image.tag=latest
+        run: ct install --target-branch=master --chart-dirs chart
 
   e2e-tests:
     runs-on: ubuntu-latest
