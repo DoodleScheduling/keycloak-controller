@@ -14,7 +14,7 @@ helmCharts:
   namespace: k8skeycloak-system
   valuesInline:
     image:
-      tag: "15.1.1"
+      tag: "22.0.0"
 
     extraEnv: |
       - name: KEYCLOAK_USER
@@ -37,4 +37,4 @@ patchesStrategicMerge:
   metadata:
     name: test
   spec:
-    version: 15.1.1
+    version: 22.0.0
