@@ -30,7 +30,6 @@ import (
 	"github.com/fluxcd/pkg/runtime/leaderelection"
 	"github.com/fluxcd/pkg/runtime/logger"
 	flag "github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -78,7 +77,7 @@ func main() {
 	flag.StringVar(&healthAddr, "health-addr", ":9557",
 		"The address the health endpoint binds to.")
 	flag.IntVar(&concurrent, "concurrent", 4,
-		"The number of concurrent HelmRelease reconciles.")
+		"The number of concurrent KeycloakRealm reconciles.")
 	flag.DurationVar(&gracefulShutdownTimeout, "graceful-shutdown-timeout", 600*time.Second,
 		"The duration given to the reconciler to finish before forcibly stopping.")
 
@@ -159,7 +158,7 @@ func main() {
 	}
 
 	if err = realmReconciler.SetupWithManager(mgr, controllers.KeycloakRealmReconcilerOptions{
-		MaxConcurrentReconciles: viper.GetInt("concurrent"),
+		MaxConcurrentReconciles: concurrent,
 	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KeycloakRealm")
 		os.Exit(1)
