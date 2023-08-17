@@ -143,6 +143,7 @@ jobs:
         run: |
           docker load --input /tmp/k8skeycloak-controller-container.tar
           docker tag k8skeycloak-controller:latest ghcr.io/doodlescheduling/k8skeycloak-controller:0.0.0
+          kind load docker-image ghcr.io/doodlescheduling/k8skeycloak-controller:0.0.0
           docker image ls -a
           
       - name: Run chart-testing (install)
