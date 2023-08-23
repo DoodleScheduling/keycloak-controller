@@ -168,7 +168,7 @@ func (r *KeycloakRealmReconciler) requestsForChangeBySelector(ctx context.Contex
 
 // Reconcile keycloakrealms
 func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := r.Log.WithValues("Namespace", req.Namespace, "Name", req.NamespacedName, "req", req)
+	logger := r.Log.WithValues("namespace", req.Namespace, "name", req.NamespacedName)
 	logger.Info("reconciling KeycloakRealm")
 
 	// Fetch the KeycloakRealm instance
