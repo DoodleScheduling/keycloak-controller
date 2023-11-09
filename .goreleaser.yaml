@@ -1,4 +1,4 @@
-project_name: k8skeycloak-controller
+project_name: keycloak-controller
 
 builds:
 - id: manager

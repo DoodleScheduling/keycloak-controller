@@ -72,10 +72,10 @@ jobs:
       - name: Package helm charts
         run: |
           packVersion=$(echo "${{ github.ref_name }}" | sed 's/^v//g')
-          helm package chart/k8skeycloak-controller -d chart --version=$packVersion --app-version=${{ github.ref_name }}
+          helm package chart/keycloak-controller -d chart --version=$packVersion --app-version=${{ github.ref_name }}
       - name: Publish helm charts to Github Container Registry
         run: |
           repository=$(echo "${{ github.repository_owner }}" | tr [:upper:] [:lower:])
-          helm push ${{ github.workspace }}/chart/k8skeycloak-controller-*.tgz oci://ghcr.io/$repository/charts |& tee .digest
+          helm push ${{ github.workspace }}/chart/keycloak-controller-*.tgz oci://ghcr.io/$repository/charts |& tee .digest
           cosign login --username ${GITHUB_ACTOR} --password ${{ secrets.GITHUB_TOKEN }} ghcr.io
-          cosign sign --yes ghcr.io/$repository/charts/k8skeycloak-controller@$(cat .digest | awk -F "[, ]+" '/Digest/{print $NF}')
+          cosign sign --yes ghcr.io/$repository/charts/keycloak-controller@$(cat .digest | awk -F "[, ]+" '/Digest/{print $NF}')

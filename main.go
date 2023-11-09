@@ -22,9 +22,9 @@ import (
 	"os"
 	"time"
 
-	infrav1beta1 "github.com/DoodleScheduling/k8skeycloak-controller/api/v1beta1"
-	"github.com/DoodleScheduling/k8skeycloak-controller/internal/controllers"
-	"github.com/DoodleScheduling/k8skeycloak-controller/internal/otelsetup"
+	infrav1beta1 "github.com/DoodleScheduling/keycloak-controller/api/v1beta1"
+	"github.com/DoodleScheduling/keycloak-controller/internal/controllers"
+	"github.com/DoodleScheduling/keycloak-controller/internal/otelsetup"
 	"github.com/fluxcd/pkg/runtime/client"
 	helper "github.com/fluxcd/pkg/runtime/controller"
 	"github.com/fluxcd/pkg/runtime/leaderelection"
@@ -41,7 +41,7 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-const controllerName = "k8skeycloak-controller"
+const controllerName = "keycloak-controller"
 
 var (
 	scheme   = runtime.NewScheme()

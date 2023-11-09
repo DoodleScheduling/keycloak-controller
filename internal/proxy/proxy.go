@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	oteltrace "go.opentelemetry.io/otel/trace"
 
-	infrav1beta1 "github.com/DoodleScheduling/k8skeycloak-controller/api/v1beta1"
+	infrav1beta1 "github.com/DoodleScheduling/keycloak-controller/api/v1beta1"
 )
 
 type proxy struct {
@@ -55,7 +55,7 @@ func New(realm infrav1beta1.KeycloakRealm, logger logr.Logger, failedRequests ch
 	}
 
 	go func() {
-		_ = http.Serve(socket, otelhttp.NewHandler(&proxy, "k8skeycloak-controller"))
+		_ = http.Serve(socket, otelhttp.NewHandler(&proxy, "keycloak-controller"))
 	}()
 
 	return socket, nil

@@ -4,3 +4,4 @@ kind: Kustomization
 resources: 
 - secret.yaml
 - keycloakrealm.yaml
+- verify-pod.yaml

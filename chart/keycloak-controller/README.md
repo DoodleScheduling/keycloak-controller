@@ -1,16 +1,16 @@
-# k8skeycloak controller helm chart
+# keycloak controller helm chart
 
-Installs the [k8skeycloak-controller](https://github.com/DoodleScheduling/k8skeycloak-controller).
+Installs the [keycloak-controller](https://github.com/DoodleScheduling/keycloak-controller).
 
 ## Installing the Chart
 
-To install the chart with the release name `k8skeycloak-controller`:
+To install the chart with the release name `keycloak-controller`:
 
 ```console
-helm upgrade --install k8skeycloak-controller oci://ghcr.io/doodlescheduling/charts/k8skeycloak-controller
+helm upgrade --install keycloak-controller oci://ghcr.io/doodlescheduling/charts/keycloak-controller
 ```
 
-This command deploys the k8skeycloak-controller with the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
+This command deploys the keycloak-controller with the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
 
 ## Prometheus
 
@@ -29,5 +29,5 @@ podAnnotations:
 See Customizing the Chart Before Installing. To see all configurable options with detailed comments, visit the chart's values.yaml, or run the configuration command:
 
 ```sh
-$ helm show values oci://ghcr.io/doodlescheduling/charts/k8skeycloak-controller
+$ helm show values oci://ghcr.io/doodlescheduling/charts/keycloak-controller
 ```

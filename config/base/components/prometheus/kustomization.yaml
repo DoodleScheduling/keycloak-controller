@@ -31,7 +31,7 @@ patches:
               requests:
                 cpu: 5m
                 memory: 64Mi
-          - name: k8skeycloak-controller
+          - name: keycloak-controller
             args:
             - --enable-leader-election
             - --metrics-addr=127.0.0.1:9556

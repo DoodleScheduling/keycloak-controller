@@ -8,7 +8,7 @@ fullnameOverride: ""
 
 image:
   pullPolicy: IfNotPresent
-  repository: ghcr.io/doodlescheduling/k8skeycloak-controller
+  repository: ghcr.io/doodlescheduling/keycloak-controller
 
 imagePullSecrets: []
 

@@ -1,6 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: k8skeycloak-system
+namespace: keycloak-system
 
 resources: 
 - ../../../default
@@ -11,7 +11,7 @@ helmCharts:
   name: keycloakx
   version: 2.0.0
   releaseName: keycloakx
-  namespace: k8skeycloak-system
+  namespace: keycloak-system
   valuesInline:
     image:
       tag: "18.0.2"
@@ -35,9 +35,9 @@ helmCharts:
           -Djgroups.dns.query=keycloakx-headless
 
 images:
-- name: ghcr.io/doodlescheduling/k8skeycloak-controller
+- name: ghcr.io/doodlescheduling/keycloak-controller
   newTag: latest
-  newName: k8skeycloak-controller
+  newName: keycloak-controller
 
 patchesStrategicMerge:
 - | 
