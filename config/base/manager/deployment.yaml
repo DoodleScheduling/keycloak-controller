@@ -21,8 +21,8 @@ spec:
         - /manager
         args:
         - --enable-leader-election
-        image: ghcr.io/doodlescheduling/k8skeycloak-controller:latest
-        name: k8skeycloak-controller
+        image: ghcr.io/doodlescheduling/keycloak-controller:latest
+        name: keycloak-controller
         imagePullPolicy: Never
         ports:
         - name: metrics

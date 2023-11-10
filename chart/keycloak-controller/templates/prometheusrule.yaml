@@ -3,15 +3,15 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
 metadata:
-  name: {{ template "k8skeycloak-controller.fullname" . }}
+  name: {{ template "keycloak-controller.fullname" . }}
 {{- if .Values.prometheusRule.namespace }}
   namespace: {{ .Values.prometheusRule.namespace }}
 {{- end }}
   labels:
-    app.kubernetes.io/name: {{ include "k8skeycloak-controller.name" . }}
+    app.kubernetes.io/name: {{ include "keycloak-controller.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
-    helm.sh/chart: {{ include "k8skeycloak-controller.chart" . }}
+    helm.sh/chart: {{ include "keycloak-controller.chart" . }}
 {{- if .Values.prometheusRule.labels }}
 {{- toYaml .Values.prometheusRule.labels | nindent 4 }}
 {{- end }}
@@ -20,7 +20,7 @@ metadata:
 spec:
 {{- with .Values.prometheusRule.rules }}
   groups:
-    - name: {{ template "k8skeycloak-controller.name" $ }}
+    - name: {{ template "keycloak-controller.name" $ }}
       rules: {{ tpl (toYaml .) $ | nindent 8 }}
 {{- end }}
 {{- end }}

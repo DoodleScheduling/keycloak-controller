@@ -1,4 +1,4 @@
-module github.com/DoodleScheduling/k8skeycloak-controller
+module github.com/DoodleScheduling/keycloak-controller
 
 go 1.20
 

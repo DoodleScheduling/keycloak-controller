@@ -17,6 +17,10 @@ jobs:
     name: FOSSA
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@1b05615854632b887b69ae1be8cbefe72d3ae423 # v2.6.0
+        with:
+          egress-policy: audit
       - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
       - name: Run FOSSA scan and upload build data
         uses: fossa-contrib/fossa-action@6728dc6fe9a068c648d080c33829ffbe56565023 # v2.0.0
@@ -29,6 +33,10 @@ jobs:
     name: CodeQL
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@1b05615854632b887b69ae1be8cbefe72d3ae423 # v2.6.0
+        with:
+          egress-policy: audit
       - name: Checkout repository
         uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
       - name: Initialize CodeQL

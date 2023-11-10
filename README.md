@@ -1,15 +1,15 @@
 # Keycloak controller for kubernetes
 
-[![release](https://img.shields.io/github/release/DoodleScheduling/k8skeycloak-controller/all.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/releases)
-[![release](https://github.com/doodlescheduling/k8skeycloak-controller/actions/workflows/release.yaml/badge.svg)](https://github.com/doodlescheduling/k8skeycloak-controller/actions/workflows/release.yaml)
-[![report](https://goreportcard.com/badge/github.com/DoodleScheduling/k8skeycloak-controller)](https://goreportcard.com/report/github.com/DoodleScheduling/k8skeycloak-controller)
-[![Coverage Status](https://coveralls.io/repos/github/DoodleScheduling/k8skeycloak-controller/badge.svg?branch=master)](https://coveralls.io/github/DoodleScheduling/k8skeycloak-controller?branch=master)
-[![license](https://img.shields.io/github/license/DoodleScheduling/k8skeycloak-controller.svg)](https://github.com/DoodleScheduling/k8skeycloak-controller/blob/master/LICENSE)
+[![release](https://img.shields.io/github/release/DoodleScheduling/keycloak-controller/all.svg)](https://github.com/DoodleScheduling/keycloak-controller/releases)
+[![release](https://github.com/doodlescheduling/keycloak-controller/actions/workflows/release.yaml/badge.svg)](https://github.com/doodlescheduling/keycloak-controller/actions/workflows/release.yaml)
+[![report](https://goreportcard.com/badge/github.com/DoodleScheduling/keycloak-controller)](https://goreportcard.com/report/github.com/DoodleScheduling/keycloak-controller)
+[![Coverage Status](https://coveralls.io/repos/github/DoodleScheduling/keycloak-controller/badge.svg?branch=master)](https://coveralls.io/github/DoodleScheduling/keycloak-controller?branch=master)
+[![license](https://img.shields.io/github/license/DoodleScheduling/keycloak-controller.svg)](https://github.com/DoodleScheduling/keycloak-controller/blob/master/LICENSE)
 
-Keycloak realm declaration for kubernetes. Compared to the [keycloak-operator](https://github.com/keycloak/keycloak-operator) this controller actually reconciles the entire realm throughout all depths. The keycloak-operator basically only creates the realm and syncs top level changes only.
+Keycloak realm management for kubernetes. Compared to the [keycloak-operator](https://github.com/keycloak/keycloak-operator) this controller actually reconciles the entire realm. The keycloak-operator basically only creates the realm and syncs top level changes only.
 
 This controller supports KeycloakRealm, KeycloakClient and KeycloakUser.
-However by design it does not actually deploy keycloak, it only manages one or multiple keycloakrealms.
+The controller does **not** deploy keycloak, its responsibility is to manage realms for extsing keycloak deployments.
 This controller runs great in combination with the official keycloak operator which deploys keycloak while this controller can manage the realm.
 
 Under the hood the controller is a wrapper around the awesome [keycloak-config-cli](https://github.com/adorsys/keycloak-config-cli)
@@ -17,7 +17,7 @@ which implements the entire realm update using the Keycloak REST API.
 
 ## Requirements
 
-You need a running keycloak server. This controllers does not manage or deploy keycloak itself but rather manages realms.
+A running keycloak is a requirement. This controllers does not manage or deploy keycloak itself.
 Also it is required to create a secret which contains the credentials for a user with enough permissions to create/manage realms.
 
 Example:
@@ -33,9 +33,9 @@ metadata:
 
 ## Example KeycloakRealm
 
-The realm is the entire representation of the realm and is synced accordingly.
-It supports secrets substition to inject secrets from kubernetes secrets.
-You can use `${secret:secretName:secretField}` anywhere in the realm definition.
+The realm is the entire representation of the realm and is reconciled accordingly.
+It supports secrets substition from kubernetes secrets.
+A pattern like `${secret:secretName:secretField}` can be used anywhere in the realm.
 
 This would create a realm called default if it does not exists. If it exists it would try to update it according to the specs.
 
@@ -102,15 +102,11 @@ spec:
 
 ### Helm
 
-Please see [chart/k8skeycloak-controller](https://github.com/DoodleScheduling/k8skeycloak-controller/tree/master/chart/k8skeycloak-controller) for the helm chart docs.
+Please see [chart/keycloak-controller](https://github.com/DoodleScheduling/keycloak-controller/tree/master/chart/keycloak-controller) for the helm chart docs.
 
 ### Manifests/kustomize
 
 Alternatively you may get the bundled manifests in each release to deploy it using kustomize or use them directly.
-
-## Configure the controller
-
-The controller is configured by arguments. For all possible arguments you may access the help using `-h`.
 
 ## Dealing with managed realms
 
@@ -122,3 +118,33 @@ kubectl patch keycloakrealms.keycloak.infra.doodle.com myrealm -p '{"spec":{"sus
 ```
 
 This can be very useful if one wants to change and test some settings using the keycloak web ui where the controller should not interfere.
+
+## Configuration
+The controller can be configured using cmd args:
+```
+--concurrent int                            The number of concurrent KeycloakRealm reconciles. (default 4)
+--enable-leader-election                    Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.
+--graceful-shutdown-timeout duration        The duration given to the reconciler to finish before forcibly stopping. (default 10m0s)
+--health-addr string                        The address the health endpoint binds to. (default ":9557")
+--insecure-kubeconfig-exec                  Allow use of the user.exec section in kubeconfigs provided for remote apply.
+--insecure-kubeconfig-tls                   Allow that kubeconfigs provided for remote apply can disable TLS verification.
+--kube-api-burst int                        The maximum burst queries-per-second of requests sent to the Kubernetes API. (default 300)
+--kube-api-qps float32                      The maximum queries-per-second of requests sent to the Kubernetes API. (default 50)
+--leader-election-lease-duration duration   Interval at which non-leader candidates will wait to force acquire leadership (duration string). (default 35s)
+--leader-election-release-on-cancel         Defines if the leader should step down voluntarily on controller manager shutdown. (default true)
+--leader-election-renew-deadline duration   Duration that the leading controller manager will retry refreshing leadership before giving up (duration string). (default 30s)
+--leader-election-retry-period duration     Duration the LeaderElector clients should wait between tries of actions (duration string). (default 5s)
+--log-encoding string                       Log encoding format. Can be 'json' or 'console'. (default "json")
+--log-level string                          Log verbosity level. Can be one of 'trace', 'debug', 'info', 'error'. (default "info")
+--max-retry-delay duration                  The maximum amount of time for which an object being reconciled will have to wait before a retry. (default 15m0s)
+--metrics-addr string                       The address the metric endpoint binds to. (default ":9556")
+--min-retry-delay duration                  The minimum amount of time for which an object being reconciled will have to wait before a retry. (default 750ms)
+--otel-endpoint string                      Opentelemetry gRPC endpoint (without protocol)
+--otel-insecure                             Opentelemetry gRPC disable tls
+--otel-service-name string                  Opentelemetry service name (default "keycloak-controller")
+--otel-tls-client-cert-path string          Opentelemetry gRPC mTLS client cert path
+--otel-tls-client-key-path string           Opentelemetry gRPC mTLS client key path
+--otel-tls-root-ca-path string              Opentelemetry gRPC mTLS root CA path
+--watch-all-namespaces                      Watch for resources in all namespaces, if set to false it will only watch the runtime namespace. (default true)
+--watch-label-selector string               Watch for resources with matching labels e.g. 'sharding.fluxcd.io/shard=shard1'.
+```

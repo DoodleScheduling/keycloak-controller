@@ -1,5 +1,5 @@
 domain: doodle.com
-repo: github.com/DoodleScheduling/k8skeycloak-controller
+repo: github.com/DoodleScheduling/keycloak-controller
 resources:
 - group: keycloak.infra.doodle.com
   kind: KeycloakRealm

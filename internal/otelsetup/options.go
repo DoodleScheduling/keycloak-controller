@@ -47,7 +47,7 @@ func (o *Options) getTLSConfig() (*tls.Config, error) {
 
 // BindFlags will parse the given pflag.FlagSet
 func (o *Options) BindFlags(fs *pflag.FlagSet) {
-	fs.StringVar(&o.ServiceName, "otel-service-name", "k8skeycloak-controller", "Opentelemetry service name")
+	fs.StringVar(&o.ServiceName, "otel-service-name", "keycloak-controller", "Opentelemetry service name")
 	fs.StringVar(&o.Endpoint, "otel-endpoint", "", "Opentelemetry gRPC endpoint (without protocol)")
 	fs.BoolVar(&o.Insecure, "otel-insecure", false, "Opentelemetry gRPC disable tls")
 	fs.StringVar(&o.TLSClientKeyPath, "otel-tls-client-key-path", "", "Opentelemetry gRPC mTLS client key path")

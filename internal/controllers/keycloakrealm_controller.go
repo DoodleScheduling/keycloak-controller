@@ -44,8 +44,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrav1beta1 "github.com/DoodleScheduling/k8skeycloak-controller/api/v1beta1"
-	"github.com/DoodleScheduling/k8skeycloak-controller/internal/proxy"
+	infrav1beta1 "github.com/DoodleScheduling/keycloak-controller/api/v1beta1"
+	"github.com/DoodleScheduling/keycloak-controller/internal/proxy"
 )
 
 // +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=keycloakclients,verbs=get;list;watch;create;update;patch;delete
