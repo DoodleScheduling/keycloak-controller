@@ -120,7 +120,7 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-		updateFailedRequests(ctx, log, failedRequests, realm)
+		_ = updateFailedRequests(ctx, log, failedRequests, realm)
 	}()
 
 	otelhttp.WithSpanOptions()
@@ -160,7 +160,6 @@ func updateFailedRequests(ctx context.Context, log logr.Logger, requests chan pr
 		case <-ctx.Done():
 			return nil
 		case requestStatus := <-requests:
-			log.Info("patching", "req", requestStatus)
 			if len(realm.Status.LastFailedRequests) >= 10 {
 				realm.Status.LastFailedRequests = realm.Status.LastFailedRequests[1:9]
 			}
@@ -192,8 +191,7 @@ func patchStatus(ctx context.Context, log logr.Logger, realm *infrav1beta1.Keycl
 	mergeFrom := latest.DeepCopy()
 	mergeFrom.ObjectMeta = realm.ObjectMeta
 	latest.Status.LastFailedRequests = realm.Status.LastFailedRequests
-
-	log.Info("updated", "req", mergeFrom.Status.LastFailedRequests, "patch", kclient.MergeFrom(mergeFrom))
+	log.V(1).Info("update lastFailedRequests", "requests", realm.Status.LastFailedRequests)
 
 	return kubeClient.Status().Patch(ctx, latest, kclient.MergeFrom(mergeFrom))
 }

@@ -69,7 +69,7 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ResponseCode: res.StatusCode,
 			ResponseBody: respBuf.String(),
 			SentAt:       sentAt,
-			Duration:     time.Now().Sub(sentAt),
+			Duration:     time.Since(sentAt),
 		}
 	}
 

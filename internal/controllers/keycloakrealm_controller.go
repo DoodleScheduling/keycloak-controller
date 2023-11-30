@@ -456,11 +456,6 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 
 	if realm.Status.Reconciler != "" {
 		secretErr = r.Client.Get(ctx, client.ObjectKey{Name: realm.Status.Reconciler, Namespace: realm.Namespace}, secret)
-		podErr = r.Client.Get(ctx, client.ObjectKey{Name: realm.Status.Reconciler, Namespace: realm.Namespace}, pod)
-
-		if current, ok := secret.Data["realm.json"]; ok {
-			needUpdate = raw != string(current)
-		}
 	}
 
 	if secretErr != nil && !apierrors.IsNotFound(secretErr) {
@@ -562,17 +557,21 @@ func (r *KeycloakRealmReconciler) getKeycloakVersion(ctx context.Context, realm 
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/realms/master/protocol/openid-connect/token", realm.Spec.Address), strings.NewReader(formData.Encode()))
 	if err != nil {
-		return "", fmt.Errorf("keycloak token request failed: %w", err)
+		return "", fmt.Errorf("keycloak token request setup failed: %w", err)
 	}
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := r.HTTPClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("keycloak token request failed: %w", err)
+	}
+
+	b, err := io.ReadAll(resp.Body)
 
 	if err != nil {
 		return "", fmt.Errorf("keycloak token read body failed: %w", err)
 	}
 
-	b, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 || resp.StatusCode == 0 {
@@ -595,7 +594,7 @@ func (r *KeycloakRealmReconciler) getKeycloakVersion(ctx context.Context, realm 
 
 	req, err = http.NewRequest("GET", fmt.Sprintf("%s/admin/serverinfo", realm.Spec.Address), nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("keycloak serverinfo request setup failed: %w", err)
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", bearerResponse.AccessToken))
@@ -609,6 +608,7 @@ func (r *KeycloakRealmReconciler) getKeycloakVersion(ctx context.Context, realm 
 	if err != nil {
 		return "", fmt.Errorf("keycloak serverinfo read body failed: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 || resp.StatusCode == 0 {
