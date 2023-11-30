@@ -2,89 +2,44 @@ package proxy
 
 import (
 	"bytes"
-	"context"
-	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"net/url"
-	"strings"
-
-	"github.com/go-logr/logr"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/attribute"
-	oteltrace "go.opentelemetry.io/otel/trace"
-
-	infrav1beta1 "github.com/DoodleScheduling/keycloak-controller/api/v1beta1"
+	"time"
 )
 
 type proxy struct {
-	logger         logr.Logger
-	realm          infrav1beta1.KeycloakRealm
-	failedRequests chan infrav1beta1.RequestStatus
-	scheme         string
-	host           string
-	path           string
+	failedRequests chan RequestStatus
 	client         *http.Client
-	secrets        []string
 }
 
-func New(realm infrav1beta1.KeycloakRealm, logger logr.Logger, failedRequests chan infrav1beta1.RequestStatus, secrets []string) (net.Listener, error) {
-	target, err := url.Parse(realm.Spec.Address)
-	if err != nil {
-		return nil, err
-	}
+type RequestStatus struct {
+	URL          string
+	Verb         string
+	SentAt       time.Time
+	Duration     time.Duration
+	ResponseCode int
+	ResponseBody string
+	Error        string
+}
 
-	proxy := proxy{
-		logger:         logger,
-		realm:          realm,
+func New(client *http.Client, failedRequests chan RequestStatus) *proxy {
+	return &proxy{
 		failedRequests: failedRequests,
-		scheme:         target.Scheme,
-		host:           target.Host,
-		secrets:        secrets,
-		path:           target.Path,
-		client: &http.Client{
-			Transport: otelhttp.NewTransport(http.DefaultTransport),
-		},
+		client:         client,
 	}
-
-	// dynamically select available tcp port
-	socket, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return nil, err
-	}
-
-	go func() {
-		_ = http.Serve(socket, otelhttp.NewHandler(&proxy, "keycloak-controller"))
-	}()
-
-	return socket, nil
 }
 
 func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	clone := r.Clone(context.TODO())
-	clone.URL.Scheme = p.scheme
-	clone.URL.Host = p.host
-	clone.URL.Path = fmt.Sprintf("%s%s", p.path, r.URL.Path)
-	clone.RequestURI = ""
+	sentAt := time.Now()
+	r.RequestURI = ""
+	res, err := p.client.Do(r)
 
-	defer clone.Body.Close()
-	var reqBuf bytes.Buffer
-	teeRequest := io.TeeReader(clone.Body, &reqBuf)
-	clone.Body = io.NopCloser(teeRequest)
-
-	cxt := r.Context()
-	span := oteltrace.SpanFromContext(cxt)
-	span.SetAttributes(attribute.String("realm", p.realm.Name), attribute.String("namespace", p.realm.Namespace))
-
-	p.logger.V(2).Info("http request sent", "uri", r.URL.String(), "method", r.Method, "body", protectSecrets(reqBuf.String(), p.secrets))
-
-	res, err := p.client.Do(clone)
 	if err != nil {
-		p.failedRequests <- infrav1beta1.RequestStatus{
-			Verb:  clone.Method,
-			URL:   clone.URL.String(),
-			Error: err.Error(),
+		p.failedRequests <- RequestStatus{
+			Verb:   r.Method,
+			URL:    r.URL.String(),
+			Error:  err.Error(),
+			SentAt: sentAt,
 		}
 		return
 	}
@@ -99,27 +54,24 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(res.StatusCode)
-	_, _ = io.Copy(w, tee)
+	_, ioErr := io.Copy(w, tee)
 
-	p.logger.V(1).Info("http request", "uri", r.URL.String(), "method", r.Method, "status", res.StatusCode)
-	p.logger.V(2).Info("http response received", "uri", r.URL.String(), "method", r.Method, "body", respBuf.String())
+	if res.StatusCode >= 400 || ioErr != nil {
+		errMsg := ""
+		if ioErr != nil {
+			errMsg = ioErr.Error()
+		}
 
-	if res.StatusCode >= 400 {
-		p.failedRequests <- infrav1beta1.RequestStatus{
-			Verb:         clone.Method,
-			URL:          clone.URL.String(),
+		p.failedRequests <- RequestStatus{
+			Verb:         r.Method,
+			URL:          r.URL.String(),
+			Error:        errMsg,
 			ResponseCode: res.StatusCode,
 			ResponseBody: respBuf.String(),
+			SentAt:       sentAt,
+			Duration:     time.Now().Sub(sentAt),
 		}
 	}
 
 	res.Body.Close()
-}
-
-func protectSecrets(s string, secrets []string) string {
-	for _, secret := range secrets {
-		s = strings.ReplaceAll(s, secret, "***")
-	}
-
-	return s
 }

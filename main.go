@@ -17,14 +17,14 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
 	infrav1beta1 "github.com/DoodleScheduling/keycloak-controller/api/v1beta1"
 	"github.com/DoodleScheduling/keycloak-controller/internal/controllers"
-	"github.com/DoodleScheduling/keycloak-controller/internal/otelsetup"
+	"github.com/DoodleScheduling/keycloak-controller/internal/transport"
 	"github.com/fluxcd/pkg/runtime/client"
 	helper "github.com/fluxcd/pkg/runtime/controller"
 	"github.com/fluxcd/pkg/runtime/leaderelection"
@@ -53,7 +53,6 @@ func init() {
 
 	_ = corev1.AddToScheme(scheme)
 	_ = infrav1beta1.AddToScheme(scheme)
-	_ = infrav1beta1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -61,6 +60,7 @@ var (
 	metricsAddr             string
 	healthAddr              string
 	concurrent              int
+	reconcilerRegistry      string
 	gracefulShutdownTimeout time.Duration
 	clientOptions           client.Options
 	kubeConfigOpts          client.KubeConfigOptions
@@ -68,10 +68,11 @@ var (
 	leaderElectionOptions   leaderelection.Options
 	rateLimiterOptions      helper.RateLimiterOptions
 	watchOptions            helper.WatchOptions
-	otelOptions             otelsetup.Options
 )
 
 func main() {
+	flag.StringVar(&reconcilerRegistry, "reconciler-registry", "adorsys/keycloak-config-cli",
+		"The default reconciler image registry")
 	flag.StringVar(&metricsAddr, "metrics-addr", ":9556",
 		"The address the metric endpoint binds to.")
 	flag.StringVar(&healthAddr, "health-addr", ":9557",
@@ -87,7 +88,6 @@ func main() {
 	rateLimiterOptions.BindFlags(flag.CommandLine)
 	kubeConfigOpts.BindFlags(flag.CommandLine)
 	watchOptions.BindFlags(flag.CommandLine)
-	otelOptions.BindFlags(flag.CommandLine)
 
 	flag.Parse()
 	logger.SetLogger(logger.NewLogger(logOptions))
@@ -150,11 +150,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	httpClient := &http.Client{}
+	httpClient.Transport = transport.NewLogger(ctrl.Log.WithName("controllers").WithName("KeycloakRealm"), http.DefaultTransport)
+
 	realmReconciler := &controllers.KeycloakRealmReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("KeycloakRealm"),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("KeycloakRealm"),
+		Client:             mgr.GetClient(),
+		Log:                ctrl.Log.WithName("controllers").WithName("KeycloakRealm"),
+		Scheme:             mgr.GetScheme(),
+		Recorder:           mgr.GetEventRecorderFor("KeycloakRealm"),
+		ReconcilerRegistry: reconcilerRegistry,
+		HTTPClient:         httpClient,
 	}
 
 	if err = realmReconciler.SetupWithManager(mgr, controllers.KeycloakRealmReconcilerOptions{
@@ -165,20 +170,6 @@ func main() {
 	}
 
 	// +kubebuilder:scaffold:builder
-
-	if otelOptions.Endpoint != "" {
-		tp, err := otelsetup.Tracing(context.Background(), otelOptions)
-		defer func() {
-			if err := tp.Shutdown(context.Background()); err != nil {
-				setupLog.Error(err, "failed to shutdown trace provider")
-			}
-		}()
-
-		if err != nil {
-			setupLog.Error(err, "failed to setup trace provider")
-		}
-	}
-
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")

@@ -148,7 +148,7 @@ spec:
                       type: string
                     type: array
                   id:
-                    description: User ID.
+                    description: ID is the internal keycloak id
                     type: string
                   lastName:
                     description: Last Name.
@@ -171,7 +171,7 @@ spec:
                   totp:
                     type: boolean
                   username:
-                    description: User Name.
+                    description: Defaults to .metadata.name
                     type: string
                 type: object
             required:

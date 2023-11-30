@@ -22,19 +22,21 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
-	"os"
-	"os/exec"
+	"net/http"
+	"net/url"
 	"regexp"
-	"sync"
+	"sort"
+	"strings"
 	"time"
 
+	"github.com/fluxcd/pkg/runtime/conditions"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -45,7 +47,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1beta1 "github.com/DoodleScheduling/keycloak-controller/api/v1beta1"
-	"github.com/DoodleScheduling/keycloak-controller/internal/proxy"
+	"github.com/DoodleScheduling/keycloak-controller/internal/merge"
 )
 
 // +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=keycloakclients,verbs=get;list;watch;create;update;patch;delete
@@ -54,7 +56,8 @@ import (
 // +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=keycloakusers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=keycloakrealms,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=keycloakrealms/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=pods,verbs=get;update;patch;delete;watch;list
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;update;patch;delete;watch;list
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 const (
@@ -64,10 +67,12 @@ const (
 // KeycloakRealm reconciles a KeycloakRealm object
 type KeycloakRealmReconciler struct {
 	client.Client
-	Log         logr.Logger
-	Scheme      *runtime.Scheme
-	Recorder    record.EventRecorder
-	secretRegex *regexp.Regexp
+	Log                logr.Logger
+	Scheme             *runtime.Scheme
+	Recorder           record.EventRecorder
+	secretRegex        *regexp.Regexp
+	ReconcilerRegistry string
+	HTTPClient         *http.Client
 }
 
 type KeycloakRealmReconcilerOptions struct {
@@ -83,6 +88,7 @@ func (r *KeycloakRealmReconciler) SetupWithManager(mgr ctrl.Manager, opts Keyclo
 		func(o client.Object) []string {
 			// The referenced admin secret gets indexed
 			realm := o.(*infrav1beta1.KeycloakRealm)
+
 			keys := []string{
 				fmt.Sprintf("%s/%s", realm.GetNamespace(), realm.Spec.AuthSecret.Name),
 			}
@@ -90,7 +96,6 @@ func (r *KeycloakRealmReconciler) SetupWithManager(mgr ctrl.Manager, opts Keyclo
 			// As well as an attempt to index all field secret references
 			b, err := json.Marshal(realm.Spec.Realm)
 			if err != nil {
-				//TODO error handling
 				return keys
 			}
 
@@ -123,6 +128,10 @@ func (r *KeycloakRealmReconciler) SetupWithManager(mgr ctrl.Manager, opts Keyclo
 			&infrav1beta1.KeycloakUser{},
 			handler.EnqueueRequestsFromMapFunc(r.requestsForChangeBySelector),
 		).
+		Watches(
+			&corev1.Pod{},
+			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &infrav1beta1.KeycloakRealm{}, handler.OnlyControllerOwner()),
+		).
 		WithOptions(controller.Options{MaxConcurrentReconciles: opts.MaxConcurrentReconciles}).
 		Complete(r)
 }
@@ -142,7 +151,7 @@ func (r *KeycloakRealmReconciler) requestsForSecretChange(ctx context.Context, o
 
 	var reqs []reconcile.Request
 	for _, realm := range list.Items {
-		r.Log.Info("referenced secret from a KeycloakRealm changed detected", "namespace", realm.GetNamespace(), "realm-name", realm.GetName())
+		r.Log.V(1).Info("referenced secret from a KeycloakRealm changed detected", "namespace", realm.GetNamespace(), "realm-name", realm.GetName())
 		reqs = append(reqs, reconcile.Request{NamespacedName: objectKey(&realm)})
 	}
 
@@ -158,7 +167,7 @@ func (r *KeycloakRealmReconciler) requestsForChangeBySelector(ctx context.Contex
 	var reqs []reconcile.Request
 	for _, realm := range list.Items {
 		if matches(o.GetLabels(), realm.Spec.ResourceSelector) {
-			r.Log.Info("change of referenced resource detected", "namespace", o.GetNamespace(), "name", o.GetName(), "kind", o.GetObjectKind().GroupVersionKind().Kind, "realm", realm.GetName())
+			r.Log.V(1).Info("change of referenced resource detected", "namespace", o.GetNamespace(), "name", o.GetName(), "kind", o.GetObjectKind().GroupVersionKind().Kind, "realm", realm.GetName())
 			reqs = append(reqs, reconcile.Request{NamespacedName: objectKey(&realm)})
 		}
 	}
@@ -190,32 +199,14 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	start := time.Now()
-	realm, err = r.reconcile(ctx, realm, logger)
-	res := ctrl.Result{}
-
-	done := time.Now()
-
-	realm.Status.LastReconcileDuration = metav1.Duration{
-		Duration: done.Sub(start),
-	}
-
+	realm, result, err := r.reconcile(ctx, realm, logger)
 	realm.Status.ObservedGeneration = realm.GetGeneration()
 
 	if err != nil {
+		logger.Error(err, "reconcile error occured")
+		realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", err.Error())
 		r.Recorder.Event(&realm, "Normal", "error", err.Error())
-		res = ctrl.Result{Requeue: true}
-		realm = infrav1beta1.KeycloakRealmNotReady(realm, infrav1beta1.FailedReason, err.Error())
-	} else {
-		if realm.Spec.Interval != nil {
-			res = ctrl.Result{
-				RequeueAfter: realm.Spec.Interval.Duration,
-			}
-		}
-
-		msg := "Realm successfully reconciled"
-		r.Recorder.Event(&realm, "Normal", "info", msg)
-		realm = infrav1beta1.KeycloakRealmReady(realm, infrav1beta1.SynchronizedReason, msg)
+		result.Requeue = true
 	}
 
 	// Update status after reconciliation.
@@ -224,120 +215,411 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{Requeue: true}, err
 	}
 
-	return res, err
+	return result, err
 }
 
-func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
-	var usr, pw string
-	var err error
-
-	if realm.Spec.AuthSecret != nil {
-		usr, pw, err = getSecret(ctx, r.Client, realm)
-		if err != nil {
-			return realm, err
-		}
-	}
-
-	msg := "reconcile realm progressing"
-	r.Recorder.Event(&realm, "Normal", "info", msg)
-	realm = infrav1beta1.KeycloakRealmNotReady(realm, infrav1beta1.ProgressingReason, msg)
-	if r.patchStatus(ctx, &realm) != nil {
-		return realm, err
-	}
-
+func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, ctrl.Result, error) {
 	realm.Status.SubResourceCatalog = []infrav1beta1.ResourceReference{}
 
-	realm, err = r.extendRealmWithClients(ctx, realm, logger)
+	realm, err := r.extendRealmWithClients(ctx, realm, logger)
 	if err != nil {
-		return realm, err
+		return realm, ctrl.Result{}, err
 	}
 
 	realm, err = r.extendRealmWithUsers(ctx, realm, logger)
 	if err != nil {
-		return realm, err
+		return realm, ctrl.Result{}, err
 	}
 
-	return r.reconcileConfigCLI(ctx, realm, logger, usr, pw)
+	return r.podReconcile(ctx, realm, logger)
 }
 
-func (r *KeycloakRealmReconciler) locateJARByVersion(version string) (string, error) {
-	p := os.Getenv("ASSETS_PATH")
-	if p == "" {
-		p = "."
+func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, ctrl.Result, error) {
+	if realm.Spec.Realm.Realm == "" {
+		realm.Spec.Realm.Realm = realm.Name
 	}
 
-	p = fmt.Sprintf("%s/keycloak-config-cli-%s.jar", p, version)
-
-	_, err := os.Stat(p)
-	if err == nil {
-		return p, nil
-	}
-
-	return "", err
-}
-
-func (r *KeycloakRealmReconciler) reconcileConfigCLI(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger, usr, pw string) (infrav1beta1.KeycloakRealm, error) {
-	jar, err := r.locateJARByVersion(realm.Spec.Version)
+	raw, err := r.substituteSecrets(ctx, realm)
 	if err != nil {
-		return realm, err
+		return realm, ctrl.Result{}, err
 	}
 
-	realm.Status.LastFailedRequests = []infrav1beta1.RequestStatus{}
-	failedRequests := make(chan infrav1beta1.RequestStatus)
+	pod := &corev1.Pod{}
+	secret := &corev1.Secret{}
 
-	raw, secrets, err := r.substituteSecrets(ctx, realm)
-	if err != nil {
-		return realm, err
-	}
+	var secretErr error
+	var podErr error
+	var needUpdate bool
 
-	socket, err := proxy.New(realm, logger, failedRequests, secrets)
-	if err != nil {
-		return realm, err
-	}
+	if realm.Status.Reconciler != "" {
+		secretErr = r.Client.Get(ctx, client.ObjectKey{Name: realm.Status.Reconciler, Namespace: realm.Namespace}, secret)
+		podErr = r.Client.Get(ctx, client.ObjectKey{Name: realm.Status.Reconciler, Namespace: realm.Namespace}, pod)
 
-	defer socket.Close()
-	addr := fmt.Sprintf("http://127.0.0.1:%d", socket.Addr().(*net.TCPAddr).Port)
-
-	var cmd []string
-
-	cmd = append(cmd, "-jar")
-	cmd = append(cmd, jar)
-	cmd = append(cmd, fmt.Sprintf("--keycloak.url=%s", addr))
-	cmd = append(cmd, "--import.files.locations=/dev/stdin")
-	logger.Info("CMD OUT", "cmd", cmd)
-
-	if realm.Spec.AuthSecret != nil {
-		cmd = append(cmd, fmt.Sprintf("--keycloak.user=%s", usr))
-		cmd = append(cmd, fmt.Sprintf("--keycloak.password=%s", pw))
-	}
-
-	exec := exec.Command("/usr/bin/java", cmd...)
-	stdin, err := exec.StdinPipe()
-	if err != nil {
-		return realm, err
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		_, _ = io.WriteString(stdin, raw)
-		stdin.Close()
-	}()
-
-	go func() {
-		for requestStatus := range failedRequests {
-			realm.Status.LastFailedRequests = append(realm.Status.LastFailedRequests, requestStatus)
+		if current, ok := secret.Data["realm.json"]; ok {
+			needUpdate = raw != string(current)
 		}
-	}()
+	}
 
-	stdout, err := exec.CombinedOutput()
-	realm.Status.LastExececutionOutput = string(stdout)
+	if secretErr != nil && !apierrors.IsNotFound(secretErr) {
+		return realm, ctrl.Result{}, secretErr
+	}
 
-	close(failedRequests)
-	wg.Done()
+	if podErr != nil && !apierrors.IsNotFound(podErr) {
+		return realm, ctrl.Result{}, podErr
+	}
 
-	return realm, err
+	cleanup := func() error {
+		if secretErr == nil {
+			if err := r.Client.Delete(ctx, secret); err != nil {
+				return err
+			}
+		}
+
+		if podErr == nil {
+			if err := r.Client.Delete(ctx, pod); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	if needUpdate {
+		r.Log.Info("realm checksum changed, recreate reconciler")
+		if err := cleanup(); err != nil {
+			return realm, ctrl.Result{}, err
+		}
+	}
+
+	if podErr == nil && pod.Name != "" {
+		var containerStatus *corev1.ContainerStatus
+		for _, container := range pod.Status.ContainerStatuses {
+			if container.Name == "keycloak-config-cli" {
+				containerStatus = &container
+				break
+			}
+		}
+
+		switch {
+		case containerStatus == nil:
+			return realm, ctrl.Result{Requeue: true}, nil
+		case containerStatus.State.Waiting != nil:
+			realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", containerStatus.State.Waiting.Message)
+			return realm, ctrl.Result{}, nil
+		case containerStatus.State.Terminated != nil && containerStatus.State.Terminated.ExitCode == 0:
+			r.Log.Info("reconciler pod succeeded")
+			if err := cleanup(); err != nil {
+				return realm, ctrl.Result{}, err
+			}
+
+			result := ctrl.Result{}
+			if realm.Spec.Interval != nil {
+				result.RequeueAfter = realm.Spec.Interval.Duration
+			}
+
+			realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionTrue, "ReconciliationSucceeded", "")
+			conditions.Delete(&realm, infrav1beta1.ConditionReconciling)
+			realm.Status.Reconciler = ""
+			realm.Status.LastFailedRequests = nil
+
+			msg := "Realm successfully reconciled"
+			r.Recorder.Event(&realm, "Normal", "info", msg)
+
+			return realm, result, nil
+		case containerStatus.State.Terminated != nil:
+			realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", fmt.Sprintf("reconciled exit with code %d", containerStatus.State.Terminated.ExitCode))
+			return realm, ctrl.Result{}, nil
+		}
+
+		result := ctrl.Result{}
+		if realm.Spec.Interval != nil {
+			result.RequeueAfter = realm.Spec.Interval.Duration
+		}
+
+		return realm, result, nil
+	}
+
+	ready := conditions.Get(&realm, infrav1beta1.ConditionReady)
+	if ready != nil && ready.Status == metav1.ConditionTrue && (realm.Spec.Interval == nil || time.Since(ready.LastTransitionTime.Time) < realm.Spec.Interval.Duration) && realm.Generation == ready.ObservedGeneration {
+		logger.V(1).Info("skip reconcilation, last transition time too recent")
+		return realm, ctrl.Result{}, nil
+	}
+
+	r.Recorder.Event(&realm, "Normal", "info", "reconcile realm progressing")
+	realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionUnknown, "Progressing", "Reconciliation in progress")
+	realm = infrav1beta1.KeycloakRealmReconciling(realm, metav1.ConditionTrue, "Progressing", "")
+
+	controllerOwner := true
+	secret = &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("keycloakrealm-%s-%s", realm.Name, rand.String(5)),
+			Namespace: realm.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Name:       realm.Name,
+					APIVersion: realm.APIVersion,
+					Kind:       realm.Kind,
+					UID:        realm.UID,
+					Controller: &controllerOwner,
+				},
+			},
+		},
+		StringData: map[string]string{
+			"realm.json": raw,
+		},
+	}
+
+	template := &corev1.Pod{}
+
+	if realm.Spec.ReconcilerTemplate != nil {
+		template = realm.Spec.ReconcilerTemplate.DeepCopy()
+	}
+
+	template.Name = secret.Name
+	template.OwnerReferences = secret.OwnerReferences
+	template.Namespace = realm.Namespace
+	template.ResourceVersion = ""
+	template.UID = ""
+
+	usernameField := "username"
+	passwordField := "password"
+
+	if realm.Spec.AuthSecret.UserField != "" {
+		usernameField = realm.Spec.AuthSecret.UserField
+	}
+
+	if realm.Spec.AuthSecret.PasswordField != "" {
+		passwordField = realm.Spec.AuthSecret.PasswordField
+	}
+
+	tag := fmt.Sprintf("latest-%s", realm.Spec.Version)
+	username, password, err := getSecret(ctx, r.Client, realm, usernameField, passwordField)
+	if err != nil {
+		return realm, ctrl.Result{}, err
+	}
+
+	if realm.Spec.Version == "" {
+		version, err := r.getKeycloakVersion(ctx, realm, logger, username, password)
+		if err != nil {
+			return realm, reconcile.Result{}, err
+		}
+
+		r.Log.Info("keycloak version detected", "version", version)
+		tag = fmt.Sprintf("latest-%s", version)
+	}
+
+	containers := []corev1.Container{
+		{
+			Name:  "keycloak-config-cli",
+			Image: fmt.Sprintf("%s:%s", r.ReconcilerRegistry, tag),
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "realm",
+					MountPath: "/realm",
+					ReadOnly:  true,
+				},
+			},
+			Env: []corev1.EnvVar{
+				{
+					Name:  "KEYCLOAK_URL",
+					Value: realm.Spec.Address,
+				},
+				{
+					Name:  "IMPORT_FILES_LOCATIONS",
+					Value: "/realm/realm.json",
+				},
+				{
+					Name: "KEYCLOAK_USER",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: realm.Spec.AuthSecret.Name,
+							},
+							Key: usernameField,
+						},
+					},
+				},
+				{
+					Name: "KEYCLOAK_PASSWORD",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: realm.Spec.AuthSecret.Name,
+							},
+							Key: passwordField,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if realm.Status.Reconciler != "" {
+		secretErr = r.Client.Get(ctx, client.ObjectKey{Name: realm.Status.Reconciler, Namespace: realm.Namespace}, secret)
+		podErr = r.Client.Get(ctx, client.ObjectKey{Name: realm.Status.Reconciler, Namespace: realm.Namespace}, pod)
+
+		if current, ok := secret.Data["realm.json"]; ok {
+			needUpdate = raw != string(current)
+		}
+	}
+
+	if secretErr != nil && !apierrors.IsNotFound(secretErr) {
+		return realm, ctrl.Result{}, secretErr
+	}
+
+	containers, err = merge.MergePatchContainers(containers, template.Spec.Containers)
+	if err != nil {
+		return realm, ctrl.Result{}, err
+	}
+
+	template.Spec.Containers = containers
+	template.Spec.Volumes = append(template.Spec.Volumes, corev1.Volume{
+		Name: "realm",
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: secret.Name,
+			},
+		},
+	})
+
+	r.Log.Info("create new reconciler pod", "pod", template.Name, "previous", realm.Status.Reconciler)
+
+	// If the status update fails the creation of the reconciler pod is postponed to the next reconcilation run
+	realm.Status.Reconciler = template.Name
+	realm.Status.LastFailedRequests = nil
+
+	if err := r.patchStatus(ctx, &realm); err != nil {
+		return realm, ctrl.Result{}, err
+	}
+
+	r.Log.Info("creating new realm secret", "secret", secret.Name)
+	if err := r.Client.Create(ctx, secret); err != nil {
+		return realm, ctrl.Result{}, err
+	}
+
+	if err := r.Client.Create(ctx, template); err != nil {
+		return realm, ctrl.Result{}, err
+	}
+
+	return realm, ctrl.Result{}, err
+}
+
+func getSecret(ctx context.Context, c client.Client, realm infrav1beta1.KeycloakRealm, usernameField, passwordField string) (string, string, error) {
+	namespace := realm.Spec.AuthSecret.Namespace
+	if namespace == "" {
+		namespace = realm.GetNamespace()
+	}
+
+	// Fetch referencing root secret
+	secret := &corev1.Secret{}
+	secretName := types.NamespacedName{
+		Namespace: namespace,
+		Name:      realm.Spec.AuthSecret.Name,
+	}
+	err := c.Get(ctx, secretName, secret)
+
+	// Failed to fetch referenced secret, requeue immediately
+	if err != nil {
+		return "", "", fmt.Errorf("referencing secret was not found: %w", err)
+	}
+
+	usr, pw, err := extractCredentials(realm.Spec.AuthSecret, secret, usernameField, passwordField)
+	if err != nil {
+		return usr, pw, fmt.Errorf("credentials field not found in referenced authSecret: %w", err)
+	}
+
+	return usr, pw, err
+}
+
+func extractCredentials(credentials infrav1beta1.SecretReference, secret *corev1.Secret, usernameField, passwordField string) (string, string, error) {
+	var (
+		user string
+		pw   string
+	)
+
+	if val, ok := secret.Data[usernameField]; !ok {
+		return "", "", errors.New("username field not found in secret")
+	} else {
+		user = string(val)
+	}
+
+	if val, ok := secret.Data[passwordField]; !ok {
+		return "", "", errors.New("password field not found in secret")
+	} else {
+		pw = string(val)
+	}
+
+	return user, pw, nil
+}
+
+func (r *KeycloakRealmReconciler) getKeycloakVersion(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger, username, password string) (string, error) {
+	formData := url.Values{
+		"username":   {username},
+		"password":   {password},
+		"grant_type": {"password"},
+		"client_id":  {"admin-cli"},
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/realms/master/protocol/openid-connect/token", realm.Spec.Address), strings.NewReader(formData.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("keycloak token request failed: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := r.HTTPClient.Do(req)
+
+	if err != nil {
+		return "", fmt.Errorf("keycloak token read body failed: %w", err)
+	}
+
+	b, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 || resp.StatusCode == 0 {
+		return "", fmt.Errorf("keycloak token request failed with status %d: %s", resp.StatusCode, string(b))
+	}
+
+	bearerResponse := struct {
+		AccessToken string `json:"access_token"`
+	}{}
+
+	if err := json.Unmarshal(b, &bearerResponse); err != nil {
+		return "", fmt.Errorf("keycloak token response decode failed: %w", err)
+	}
+
+	systemInfoResponse := struct {
+		SystemInfo struct {
+			Version string `json:"version"`
+		} `json:"systemInfo"`
+	}{}
+
+	req, err = http.NewRequest("GET", fmt.Sprintf("%s/admin/serverinfo", realm.Spec.Address), nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", bearerResponse.AccessToken))
+	resp, err = r.HTTPClient.Do(req)
+
+	if err != nil {
+		return "", fmt.Errorf("keycloak serverinfo request failed: %w", err)
+	}
+
+	b, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("keycloak serverinfo read body failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 || resp.StatusCode == 0 {
+		return "", fmt.Errorf("keycloak serverinfo request failed with status %d: %s", resp.StatusCode, string(b))
+	}
+
+	if err := json.Unmarshal(b, &systemInfoResponse); err != nil {
+		return "", fmt.Errorf("keycloak serverinfo response decode failed: %w", err)
+	}
+
+	return systemInfoResponse.SystemInfo.Version, nil
 }
 
 func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
@@ -346,14 +628,6 @@ func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, re
 	if err != nil {
 		return realm, err
 	}
-
-	instanceSelector, err := metav1.LabelSelectorAsSelector(realm.Spec.ResourceSelector)
-	if err != nil {
-		return realm, err
-	}
-
-	req, _ := instanceSelector.Requirements()
-	selector.Add(req...)
 
 	err = r.Client.List(ctx, &clients, client.InNamespace(realm.Namespace), client.MatchingLabelsSelector{Selector: selector})
 	if err != nil {
@@ -367,8 +641,16 @@ func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, re
 			APIVersion: client.APIVersion,
 		})
 
+		if client.Spec.Client.ClientID == "" {
+			client.Spec.Client.ClientID = client.Name
+		}
+
 		realm.Spec.Realm.Clients = append(realm.Spec.Realm.Clients, client.Spec.Client)
 	}
+
+	sort.Slice(realm.Spec.Realm.Clients, func(i, j int) bool {
+		return realm.Spec.Realm.Clients[i].ClientID < realm.Spec.Realm.Clients[j].ClientID
+	})
 
 	return realm, nil
 }
@@ -379,14 +661,6 @@ func (r *KeycloakRealmReconciler) extendRealmWithUsers(ctx context.Context, real
 	if err != nil {
 		return realm, err
 	}
-
-	instanceSelector, err := metav1.LabelSelectorAsSelector(realm.Spec.ResourceSelector)
-	if err != nil {
-		return realm, err
-	}
-
-	req, _ := instanceSelector.Requirements()
-	selector.Add(req...)
 
 	err = r.Client.List(ctx, &users, client.InNamespace(realm.Namespace), client.MatchingLabelsSelector{Selector: selector})
 	if err != nil {
@@ -400,8 +674,16 @@ func (r *KeycloakRealmReconciler) extendRealmWithUsers(ctx context.Context, real
 			APIVersion: user.APIVersion,
 		})
 
+		if user.Spec.User.UserName == "" {
+			user.Spec.User.UserName = user.Name
+		}
+
 		realm.Spec.Realm.Users = append(realm.Spec.Realm.Users, user.Spec.User)
 	}
+
+	sort.Slice(realm.Spec.Realm.Users, func(i, j int) bool {
+		return realm.Spec.Realm.Users[i].UserName < realm.Spec.Realm.Users[j].UserName
+	})
 
 	return realm, nil
 }
@@ -427,12 +709,10 @@ func matches(labels map[string]string, selector *metav1.LabelSelector) bool {
 	return true
 }
 
-func (r *KeycloakRealmReconciler) substituteSecrets(ctx context.Context, realm infrav1beta1.KeycloakRealm) (string, []string, error) {
-	var secrets []string
-
+func (r *KeycloakRealmReconciler) substituteSecrets(ctx context.Context, realm infrav1beta1.KeycloakRealm) (string, error) {
 	b, err := json.Marshal(realm.Spec.Realm)
 	if err != nil {
-		return "", secrets, err
+		return "", err
 	}
 
 	var errors []error
@@ -454,64 +734,15 @@ func (r *KeycloakRealmReconciler) substituteSecrets(ctx context.Context, realm i
 			errors = append(errors, fmt.Errorf("field %s not found in secret %s", parts[2], parts[1]))
 			return parts[0]
 		} else {
-			secrets = append(secrets, string(val))
 			return string(val)
 		}
 	})
 
 	if len(errors) > 0 {
-		return str, secrets, errors[0]
+		return str, errors[0]
 	}
 
-	return str, secrets, nil
-}
-
-func getSecret(ctx context.Context, c client.Client, realm infrav1beta1.KeycloakRealm) (string, string, error) {
-	namespace := realm.Spec.AuthSecret.Namespace
-	if namespace == "" {
-		namespace = realm.GetNamespace()
-	}
-
-	// Fetch referencing root secret
-	secret := &corev1.Secret{}
-	secretName := types.NamespacedName{
-		Namespace: namespace,
-		Name:      realm.Spec.AuthSecret.Name,
-	}
-	err := c.Get(ctx, secretName, secret)
-
-	// Failed to fetch referenced secret, requeue immediately
-	if err != nil {
-		return "", "", fmt.Errorf("referencing secret was not found: %w", err)
-	}
-
-	usr, pw, err := extractCredentials(realm.Spec.AuthSecret, secret)
-	if err != nil {
-		return usr, pw, fmt.Errorf("credentials field not found in referenced rootSecret: %w", err)
-	}
-
-	return usr, pw, err
-}
-
-func extractCredentials(credentials *infrav1beta1.SecretReference, secret *corev1.Secret) (string, string, error) {
-	var (
-		user string
-		pw   string
-	)
-
-	if val, ok := secret.Data[credentials.UserField]; !ok {
-		return "", "", errors.New("defined username field not found in secret")
-	} else {
-		user = string(val)
-	}
-
-	if val, ok := secret.Data[credentials.PasswordField]; !ok {
-		return "", "", errors.New("defined password field not found in secret")
-	} else {
-		pw = string(val)
-	}
-
-	return user, pw, nil
+	return str, nil
 }
 
 func (r *KeycloakRealmReconciler) patchStatus(ctx context.Context, realm *infrav1beta1.KeycloakRealm) error {

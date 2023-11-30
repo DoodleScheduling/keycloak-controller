@@ -1,5 +1,6 @@
 
 # Image URL to use all building/pushing image targets
+PROXY_IMG ?= keycloak-controller-proxy:latest
 IMG ?= keycloak-controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.27
@@ -72,6 +73,7 @@ test: manifests generate fmt vet tidy envtest ## Run tests.
 .PHONY: build
 build: generate fmt vet tidy ## Build manager binary.
 	CGO_ENABLED=0 go build -o manager main.go
+	CGO_ENABLED=0 go build -o proxy/proxy ./proxy/
 
 .PHONY: run
 run: manifests generate fmt vet tidy ## Run a controller from your host.
@@ -90,10 +92,12 @@ api-docs: gen-crd-api-reference-docs
 .PHONY: docker-build
 docker-build: build
 	docker build -t ${IMG} .
+	docker build -t ${PROXY_IMG} proxy
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+	docker push ${PROXY_IMG}
 
 ##@ Deployment
 

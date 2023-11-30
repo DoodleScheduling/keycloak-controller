@@ -18,8 +18,10 @@ package controllers
 
 import (
 	"context"
-	"fmt"
+	"io"
+	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -56,8 +58,8 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "base", "crd", "bases")},
-		ErrorIfCRDPathMissing: false,
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "base", "crd", "bases")},
+		ErrorIfCRDPathMissing: true,
 	}
 
 	cfg, err := testEnv.Start()
@@ -77,14 +79,16 @@ var _ = BeforeSuite(func() {
 
 	//+kubebuilder:scaffold:scheme
 	// KeycloakRealm setup
-	fmt.Printf("setup..................................")
 	err = (&KeycloakRealmReconciler{
 		Client:   k8sManager.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("KeycloakRealm"),
 		Scheme:   k8sManager.GetScheme(),
 		Recorder: k8sManager.GetEventRecorderFor("KeycloakRealm"),
+		HTTPClient: &http.Client{
+			Transport: &mockTransport{},
+		},
+		ReconcilerRegistry: "test",
 	}).SetupWithManager(k8sManager, KeycloakRealmReconcilerOptions{MaxConcurrentReconciles: 10})
-
 	Expect(err).ToNot(HaveOccurred(), "failed to setup KeycloakRealm")
 
 	ctx, cancel = context.WithCancel(context.TODO())
@@ -105,3 +109,12 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })
+
+type mockTransport struct{}
+
+func (m *mockTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader(`{"systemInfo":{"version":"22.0.1"}}`)),
+	}, nil
+}
