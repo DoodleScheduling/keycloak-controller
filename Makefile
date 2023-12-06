@@ -127,10 +127,10 @@ CLUSTER=kind
 
 .PHONY: kind-test
 kind-test: ## Deploy including test
-	kustomize build config/base/crd | kubectl --context kind-${CLUSTER} apply -f -	
+	kustomize build config/base/crd | kubectl --context kind-${CLUSTER} apply --server-side=true -f -
 	kubectl --context kind-${CLUSTER} -n keycloak-system delete pods --all
 	kind load docker-image ${IMG} --name ${CLUSTER}
-	kustomize build config/tests/cases/${TEST_PROFILE} --enable-helm | kubectl --context kind-${CLUSTER} apply -f -	
+	kustomize build config/tests/cases/${TEST_PROFILE} --enable-helm | kubectl --context kind-${CLUSTER} apply --server-side=true -f -
 	kubectl --context kind-${CLUSTER} -n keycloak-system wait --for=condition=Ready pods -l control-plane=controller-manager -l app.kubernetes.io/managed-by!=Helm,verify!=yes --timeout=3m
 	kubectl --context kind-${CLUSTER} -n keycloak-system wait --for=jsonpath='{.status.conditions[1].reason}'=PodCompleted pods -l app.kubernetes.io/managed-by!=Helm,verify=yes --timeout=3m
 
