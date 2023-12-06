@@ -180,14 +180,14 @@ spec:
 ### Secret substitution
 
 All fields support secret subsitution from kubernetes secrets.
-A pattern like `${secret:secretName:secretField}` can be used anywhere in the `KeycloakRealm`` `.spec.realm` as
+A pattern like `${secret:secretName:secretField}` can be used anywhere in the `KeycloakRealm` `.spec.realm` as
 well as in `KeycloakUser` and `KeycloakClient` resources.
 
 **Note**: The secret must be in the same namespace as the KeycloakRealm.
 
 ## How does this work?
 For each `KeycloakRealm` the controller attempts to create reconciler pod which invokes upstream images from [keycloak-config-cli](https://github.com/adorsys/keycloak-config-cli). For each realm beeing reconciled a pod is spinned up in the same namespace the realm lives. If a current reconciliation is in progress one can get the reconciler pod from `.status.reconciler`.
-The controller tries to automatically elect the keycloak version however it is possible to overrule this by defining the keycloak version manually on the `KeycloakRealm`` in `.spec.version`.
+The controller tries to automatically elect the keycloak version however it is possible to overrule this by defining the keycloak version manually on the `KeycloakRealm` in `.spec.version`.
 
 Previous versions of this controller bundled [keycloak-config-cli](https://github.com/adorsys/keycloak-config-cli) artifacts in the controller itself. However this introduced various implications. For instances it was not possible to tweak arguments for [keycloak-config-cli](https://github.com/adorsys/keycloak-config-cli) itself by realm. Also shelling out to `java` was a bit of a security concern since the controller image itself also needs to bundle an OpenJDK runtime. 
 From version 2.x the controller is refactored into a cloud native approach as described above.
