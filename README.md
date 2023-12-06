@@ -378,7 +378,7 @@ spec:
 ```
 
 **Note**: The proxy needs read access to keycloakrealms as well as patch access to the /status subresource.
-In the example above there is a ClusterRole called keycloakrealm-proxy granting just that. This ClusterRole also is bundled in the helm chart, you may use {releaseName}-proxy for the RoleBinding.
+In the example above there is a ClusterRole called keycloakrealm-proxy granting just that. This ClusterRole also is bundled in the helm chart, you may use {releaseName}-reconcile-proxy for the RoleBinding.
 
 ## Installation
 
