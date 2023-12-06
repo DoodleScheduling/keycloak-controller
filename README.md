@@ -241,6 +241,7 @@ as long as a reconciliation is in progress.
 
 `.status.reconciler` references the reconciler pod while a realm has a `Reconciling` condition
 and `.status.lastFailedRequests` includes all failed requests from the current reconciliation. 
+
 **Note**: `.status.lastFailedRequests` will only be included if the sidecar proxy is deployed. See the following chapter.
 
 ```yaml
