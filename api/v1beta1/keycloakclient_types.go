@@ -30,7 +30,7 @@ func init() {
 // +k8s:openapi-gen=true
 type KeycloakClientSpec struct {
 	// Selector for looking up KeycloakRealm Custom Resources.
-	// +kubebuilder:validation:Required
+	// +optional
 	// This field is deprecated
 	RealmSelector *metav1.LabelSelector `json:"realmSelector"`
 	// Keycloak Client REST object.
@@ -65,12 +65,12 @@ type ClientMappingsRepresentation struct {
 }
 
 type KeycloakAPIClient struct {
-	// Client ID. If not specified, automatically generated.
+	// ID is the internal keycloak id for the client.
 	// +optional
 	ID string `json:"id,omitempty"`
-	// Client ID.
-	// +kubebuilder:validation:Required
-	ClientID string `json:"clientId"`
+	// ClientID is the OAUTH2 client name. Defaults to .metadata.name
+	// +optional
+	ClientID string `json:"clientId,omitempty"`
 	// Client name.
 	// +optional
 	Name string `json:"name,omitempty"`
@@ -118,19 +118,19 @@ type KeycloakAPIClient struct {
 	ConsentRequired bool `json:"consentRequired,omitempty"`
 	// True if Standard flow is enabled.
 	// +optional
-	StandardFlowEnabled bool `json:"standardFlowEnabled"`
+	StandardFlowEnabled bool `json:"standardFlowEnabled,omitempty"`
 	// True if Implicit flow is enabled.
 	// +optional
-	ImplicitFlowEnabled bool `json:"implicitFlowEnabled"`
+	ImplicitFlowEnabled bool `json:"implicitFlowEnabled,omitempty"`
 	// True if Direct Grant is enabled.
 	// +optional
-	DirectAccessGrantsEnabled bool `json:"directAccessGrantsEnabled"`
+	DirectAccessGrantsEnabled bool `json:"directAccessGrantsEnabled,omitempty"`
 	// True if Service Accounts are enabled.
 	// +optional
 	ServiceAccountsEnabled bool `json:"serviceAccountsEnabled,omitempty"`
 	// True if this is a public Client.
 	// +optional
-	PublicClient bool `json:"publicClient"`
+	PublicClient bool `json:"publicClient,omitempty"`
 	// True if this client supports Front Channel logout.
 	// +optional
 	FrontchannelLogout bool `json:"frontchannelLogout,omitempty"`

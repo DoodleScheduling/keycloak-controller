@@ -471,7 +471,7 @@ spec:
                     description: What Client authentication type to use.
                     type: string
                   clientId:
-                    description: Client ID.
+                    description: ClientID is the OAUTH2 client name. Defaults to .metadata.name
                     type: string
                   consentRequired:
                     description: True if Consent Screen is required.
@@ -504,7 +504,7 @@ spec:
                     description: True if Full Scope is allowed.
                     type: boolean
                   id:
-                    description: Client ID. If not specified, automatically generated.
+                    description: ID is the internal keycloak id for the client.
                     type: string
                   implicitFlowEnabled:
                     description: True if Implicit flow is enabled.
@@ -596,8 +596,6 @@ spec:
                     items:
                       type: string
                     type: array
-                required:
-                - clientId
                 type: object
               realmSelector:
                 description: Selector for looking up KeycloakRealm Custom Resources.
@@ -647,7 +645,6 @@ spec:
                 x-kubernetes-map-type: atomic
             required:
             - client
-            - realmSelector
             type: object
         type: object
     served: true

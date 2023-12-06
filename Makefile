@@ -1,5 +1,6 @@
 
 # Image URL to use all building/pushing image targets
+PROXY_IMG ?= keycloak-controller-proxy:latest
 IMG ?= keycloak-controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.27
@@ -72,6 +73,7 @@ test: manifests generate fmt vet tidy envtest ## Run tests.
 .PHONY: build
 build: generate fmt vet tidy ## Build manager binary.
 	CGO_ENABLED=0 go build -o manager main.go
+	CGO_ENABLED=0 go build -o proxy/proxy ./proxy/
 
 .PHONY: run
 run: manifests generate fmt vet tidy ## Run a controller from your host.
@@ -90,10 +92,12 @@ api-docs: gen-crd-api-reference-docs
 .PHONY: docker-build
 docker-build: build
 	docker build -t ${IMG} .
+	docker build -t ${PROXY_IMG} proxy
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+	docker push ${PROXY_IMG}
 
 ##@ Deployment
 
@@ -123,10 +127,10 @@ CLUSTER=kind
 
 .PHONY: kind-test
 kind-test: ## Deploy including test
-	kustomize build config/base/crd | kubectl --context kind-${CLUSTER} apply -f -	
+	kustomize build config/base/crd | kubectl --context kind-${CLUSTER} apply --server-side=true -f -
 	kubectl --context kind-${CLUSTER} -n keycloak-system delete pods --all
 	kind load docker-image ${IMG} --name ${CLUSTER}
-	kustomize build config/tests/cases/${TEST_PROFILE} --enable-helm | kubectl --context kind-${CLUSTER} apply -f -	
+	kustomize build config/tests/cases/${TEST_PROFILE} --enable-helm | kubectl --context kind-${CLUSTER} apply --server-side=true -f -
 	kubectl --context kind-${CLUSTER} -n keycloak-system wait --for=condition=Ready pods -l control-plane=controller-manager -l app.kubernetes.io/managed-by!=Helm,verify!=yes --timeout=3m
 	kubectl --context kind-${CLUSTER} -n keycloak-system wait --for=jsonpath='{.status.conditions[1].reason}'=PodCompleted pods -l app.kubernetes.io/managed-by!=Helm,verify=yes --timeout=3m
 

@@ -40,16 +40,18 @@ func Tracing(ctx context.Context, opts Options) (*trace.TracerProvider, error) {
 		return nil, err
 	}
 
+	attrs := opts.Attributes
+	attrs = append(attrs, semconv.ServiceNameKey.String(opts.ServiceName))
+
 	// labels/tags/resources that are common to all traces.
 	resource := resource.NewWithAttributes(
-		semconv.SchemaURL,
-		semconv.ServiceNameKey.String(opts.ServiceName),
+		semconv.SchemaURL, attrs...,
 	)
 
 	provider := trace.NewTracerProvider(
 		trace.WithBatcher(exporter),
 		trace.WithResource(resource),
-		trace.WithSampler(trace.ParentBased(trace.TraceIDRatioBased(1))),
+		trace.WithSampler(trace.ParentBased(trace.TraceIDRatioBased(opts.Ratio))),
 	)
 
 	otel.SetTextMapPropagator(

@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -55,8 +56,7 @@ type KeycloakRealmSpec struct {
 	Address string `json:"address,omitempty"`
 
 	// Contains a credentials set of a user with enough permission to manage keycloak
-	// +optional
-	AuthSecret *SecretReference `json:"authSecret,omitempty"`
+	AuthSecret SecretReference `json:"authSecret,omitempty"`
 
 	// Interval reconciliation
 	// +optional
@@ -66,12 +66,16 @@ type KeycloakRealmSpec struct {
 	// +optional
 	Suspend bool `json:"suspend,omitempty"`
 
+	// Reconciler defines the pod spec for the reconciler
+	// +optional
+	ReconcilerTemplate *corev1.Pod `json:"reconcilerTemplate,omitempty"`
+
 	// Version is the keycloak version
-	// +required
+	// +optional
 	Version string `json:"version"`
 
 	// Realm is the unstructured keycloak realm representation
-	// +required
+	// +optional
 	Realm KeycloakAPIRealm `json:"realm"`
 
 	// ResourceSelector defines a selector to select keycloak resources associated with this realm
@@ -110,6 +114,9 @@ type KeycloakRealmStatus struct {
 	// +optional
 	LastExececutionOutput string `json:"lastExececutionOutput,omitempty"`
 
+	// Reconciler is the reconciler pod while a reconciliation is in progress
+	Reconciler string `json:"reconciler,omitempty"`
+
 	// LastReconcileDuration is the total time the reconcile of the realm took
 	LastReconcileDuration metav1.Duration `json:"lastReconcileDuration,omitempty"`
 
@@ -130,22 +137,22 @@ type ResourceReference struct {
 
 // RequestStatus knows details about a keycloak API request
 type RequestStatus struct {
-	URL          string `json:"url,omitempty"`
-	Verb         string `json:"verb,omitempty"`
-	ResponseCode int    `json:"responseCode,omitempty"`
-	ResponseBody string `json:"responseBody,omitempty"`
-	Error        string `json:"error,omitempty"`
+	URL          string          `json:"url,omitempty"`
+	Verb         string          `json:"verb,omitempty"`
+	SentAt       metav1.Time     `json:"sentAt,omitempty"`
+	Duration     metav1.Duration `json:"duration,omitempty"`
+	ResponseCode int             `json:"responseCode,omitempty"`
+	ResponseBody string          `json:"responseBody,omitempty"`
+	Error        string          `json:"error,omitempty"`
 }
 
-// KeycloakRealmNotReady
-func KeycloakRealmNotReady(realm KeycloakRealm, reason, message string) KeycloakRealm {
-	setResourceCondition(&realm, ReadyCondition, metav1.ConditionFalse, reason, message)
+func KeycloakRealmReconciling(realm KeycloakRealm, status metav1.ConditionStatus, reason, message string) KeycloakRealm {
+	setResourceCondition(&realm, ConditionReconciling, status, reason, message, realm.ObjectMeta.Generation)
 	return realm
 }
 
-// KeycloakRealmReady
-func KeycloakRealmReady(realm KeycloakRealm, reason, message string) KeycloakRealm {
-	setResourceCondition(&realm, ReadyCondition, metav1.ConditionTrue, reason, message)
+func KeycloakRealmReady(realm KeycloakRealm, status metav1.ConditionStatus, reason, message string) KeycloakRealm {
+	setResourceCondition(&realm, ConditionReady, status, reason, message, realm.ObjectMeta.Generation)
 	return realm
 }
 
@@ -154,19 +161,26 @@ func (in *KeycloakRealm) GetStatusConditions() *[]metav1.Condition {
 	return &in.Status.Conditions
 }
 
+func (in *KeycloakRealm) GetConditions() []metav1.Condition {
+	return in.Status.Conditions
+}
+
+func (in *KeycloakRealm) SetConditions(conditions []metav1.Condition) {
+	in.Status.Conditions = conditions
+}
+
 type KeycloakAPIRealm struct {
-	// +kubebuilder:validation:Required
+	// ID is the internal keycloak id
 	// +optional
 	ID string `json:"id,omitempty"`
-	// Realm name.
-	// +kubebuilder:validation:Required
-	Realm string `json:"realm"`
+	// Realm name. Will fallack to .metadata.name if ommited.
+	Realm string `json:"realm,omitempty"`
 	// Realm enabled flag.
 	// +optional
-	Enabled bool `json:"enabled"`
+	Enabled bool `json:"enabled,omitempty"`
 	// Realm display name.
 	// +optional
-	DisplayName string `json:"displayName"`
+	DisplayName string `json:"displayName,omitempty"`
 	// Realm HTML display name.
 	// +optional
 	DisplayNameHTML string `json:"displayNameHtml,omitempty"`

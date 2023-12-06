@@ -30,7 +30,7 @@ func init() {
 // +k8s:openapi-gen=true
 type KeycloakUserSpec struct {
 	// Selector for looking up KeycloakUser Custom Resources.
-	// +kubebuilder:validation:Required
+	// +optional
 	// This field is deprecated
 	RealmSelector *metav1.LabelSelector `json:"realmSelector,omitempty"`
 	// Keycloak User REST object.
@@ -39,10 +39,10 @@ type KeycloakUserSpec struct {
 }
 
 type KeycloakAPIUser struct {
-	// User ID.
+	// ID is the internal keycloak id
 	// +optional
 	ID string `json:"id,omitempty"`
-	// User Name.
+	// Defaults to .metadata.name
 	// +optional
 	UserName string `json:"username,omitempty"`
 	// First Name.

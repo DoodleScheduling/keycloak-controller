@@ -14,10 +14,24 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - secrets
+  - pods
   verbs:
+  - delete
   - get
   - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - delete
+  - get
+  - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - keycloak.infra.doodle.com

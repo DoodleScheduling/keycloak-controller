@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/pflag"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type Options struct {
@@ -16,6 +17,8 @@ type Options struct {
 	TLSClientKeyPath  string
 	TLSClientCertPath string
 	TLSRootCAPath     string
+	Ratio             float64
+	Attributes        []attribute.KeyValue
 }
 
 // getTls returns a configuration that enables the use of mutual TLS.
@@ -53,4 +56,5 @@ func (o *Options) BindFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.TLSClientKeyPath, "otel-tls-client-key-path", "", "Opentelemetry gRPC mTLS client key path")
 	fs.StringVar(&o.TLSClientCertPath, "otel-tls-client-cert-path", "", "Opentelemetry gRPC mTLS client cert path")
 	fs.StringVar(&o.TLSRootCAPath, "otel-tls-root-ca-path", "", "Opentelemetry gRPC mTLS root CA path")
+	fs.Float64Var(&o.Ratio, "otel-ratio", 1, "Ratio for sending traces")
 }

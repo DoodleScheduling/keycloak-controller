@@ -1,9 +1,6 @@
-FROM amazoncorretto:17.0.8
+FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY manager manager
 USER 65532:65532
-COPY assets /assets
-ENV ASSETS_PATH="/assets"
-ENV USER keycloak-controller
 
 ENTRYPOINT ["/manager"]
