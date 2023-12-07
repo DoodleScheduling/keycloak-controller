@@ -372,7 +372,7 @@ spec:
               fieldPath: metadata.namespace
         - name: PROXY_ADDRESS
           value: 127.0.0.1:8080
-        image: ghcr.io/doodlescheduling/keycloak-controller/proxy:v2.0.0
+        image: ghcr.io/doodlescheduling/keycloak-controller/proxy:v2
         name: proxy
       serviceAccount: keycloakrealm-default
 ```

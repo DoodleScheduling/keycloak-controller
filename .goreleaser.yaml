@@ -9,6 +9,7 @@ builds:
   - CGO_ENABLED=0
 - id: proxy
   binary: proxy
+  main: ./proxy
   goos:
   - linux
   env:
@@ -117,6 +118,10 @@ docker_manifests:
   image_templates:
   - ghcr.io/doodlescheduling/{{ .ProjectName }}:v{{ .Version }}-amd64
   - ghcr.io/doodlescheduling/{{ .ProjectName }}:v{{ .Version }}-arm64v8
+- name_template: ghcr.io/doodlescheduling/{{ .ProjectName }}/proxy:v{{ .Major }}
+  image_templates:
+  - ghcr.io/doodlescheduling/{{ .ProjectName }}/proxy:v{{ .Version }}-amd64
+  - ghcr.io/doodlescheduling/{{ .ProjectName }}/proxy:v{{ .Version }}-arm64v8
 - name_template: ghcr.io/doodlescheduling/{{ .ProjectName }}/proxy:v{{ .Version }}
   image_templates:
   - ghcr.io/doodlescheduling/{{ .ProjectName }}/proxy:v{{ .Version }}-amd64
