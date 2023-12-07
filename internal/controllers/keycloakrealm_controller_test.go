@@ -1445,6 +1445,60 @@ var _ = Describe("KeycloakRealm controller", func() {
 			Expect(pod.Spec.Containers[0].Env).Should(Equal(envs))
 			Expect(reconciledInstance.Status.SubResourceCatalog).Should(HaveLen(0))
 		})
+
+		It("recreates the running reconciler pod if the spec changed", func() {
+			By("waiting for the reconciliation")
+			instanceLookupKey := types.NamespacedName{Name: realmName, Namespace: "default"}
+			reconciledInstance := &v1beta1.KeycloakRealm{}
+			Expect(k8sClient.Get(ctx, instanceLookupKey, reconciledInstance)).Should(BeNil())
+
+			beforeChangeStatus := reconciledInstance.Status
+			reconciledInstance.Spec.ReconcilerTemplate.Spec.Containers[1].Image = "new-image:v1"
+			Expect(k8sClient.Update(ctx, reconciledInstance)).Should(Succeed())
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, instanceLookupKey, reconciledInstance)
+				if err != nil {
+					return false
+				}
+
+				return beforeChangeStatus.Reconciler != reconciledInstance.Status.Reconciler
+			}, timeout, interval).Should(BeTrue())
+
+			By("making sure there is a reconciler pod")
+			pod := &corev1.Pod{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      reconciledInstance.Status.Reconciler,
+				Namespace: reconciledInstance.Namespace,
+			}, pod)).Should(Succeed())
+
+			Expect(pod.Spec.Containers[1].Image).Should(Equal("new-image:v1"))
+		})
+
+		It("recreates the running reconciler pod if the spec annotation is not present", func() {
+			By("waiting for the reconciliation")
+			instanceLookupKey := types.NamespacedName{Name: realmName, Namespace: "default"}
+			reconciledInstance := &v1beta1.KeycloakRealm{}
+			Expect(k8sClient.Get(ctx, instanceLookupKey, reconciledInstance)).Should(BeNil())
+			beforeChangeStatus := reconciledInstance.Status
+
+			pod := &corev1.Pod{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      reconciledInstance.Status.Reconciler,
+				Namespace: reconciledInstance.Namespace,
+			}, pod)).Should(Succeed())
+			pod.Annotations = nil
+			Expect(k8sClient.Update(ctx, pod)).Should(Succeed())
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, instanceLookupKey, reconciledInstance)
+				if err != nil {
+					return false
+				}
+
+				return beforeChangeStatus.Reconciler != reconciledInstance.Status.Reconciler
+			}, timeout, interval).Should(BeTrue())
+		})
 	})
 
 	When("a realm without auth credentials is reconciled", func() {
