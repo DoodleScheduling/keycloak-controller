@@ -259,8 +259,6 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 			needUpdate = raw != string(current)
 		}
 
-		r.Log.Info("xxx", "pod", pod.Annotations)
-
 		specVersion, ok := pod.Annotations["keycloak-controller/realm-spec-version"]
 		if !needUpdate && podErr == nil && ok {
 			needUpdate = specVersion != fmt.Sprintf("%d", realm.Generation)
