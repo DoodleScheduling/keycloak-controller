@@ -258,6 +258,17 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 		if current, ok := secret.Data["realm.json"]; ok {
 			needUpdate = raw != string(current)
 		}
+
+		r.Log.Info("xxx", "pod", pod.Annotations)
+
+		specVersion, ok := pod.Annotations["keycloak-controller/realm-spec-version"]
+		if !needUpdate && podErr == nil && ok {
+			needUpdate = specVersion != fmt.Sprintf("%d", realm.Generation)
+		}
+
+		if !ok {
+			needUpdate = true
+		}
 	}
 
 	if secretErr != nil && !apierrors.IsNotFound(secretErr) {
@@ -380,6 +391,11 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 	template.Namespace = realm.Namespace
 	template.ResourceVersion = ""
 	template.UID = ""
+
+	if template.Annotations == nil {
+		template.Annotations = make(map[string]string)
+	}
+	template.Annotations["keycloak-controller/realm-spec-version"] = fmt.Sprintf("%d", realm.Generation)
 
 	usernameField := "username"
 	passwordField := "password"
