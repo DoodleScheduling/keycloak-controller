@@ -307,7 +307,7 @@ It is recommended to configure all realms to run with the proxy.
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   name: keycloakrealm-proxy
 rules:
@@ -331,8 +331,8 @@ metadata:
   name: keycloakrealm-default
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: keycloakrealm-default
+  kind: Role
+  name: keycloakrealm-proxy
 subjects:
 - kind: ServiceAccount
   name: keycloakrealm-default
@@ -376,9 +376,6 @@ spec:
         name: proxy
       serviceAccount: keycloakrealm-default
 ```
-
-**Note**: The proxy needs read access to keycloakrealms as well as patch access to the /status subresource.
-In the example above there is a ClusterRole called keycloakrealm-proxy granting just that. This ClusterRole also is bundled in the helm chart, you may use {releaseName}-reconcile-proxy for the RoleBinding.
 
 ## Installation
 
