@@ -1,13 +1,34 @@
 domain: doodle.com
-repo: github.com/DoodleScheduling/keycloak-controller
+layout:
+- go.kubebuilder.io/v3
+projectName: keycloak-controller
+repo: github.com/doodlescheduling/keycloak-controller
 resources:
-- group: keycloak.infra.doodle.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: doodle.com
+  group: keycloak.infra.doodle.com
   kind: KeycloakRealm
+  path: github.com/doodlescheduling/keycloak-controller/api/v1beta1
   version: v1beta1
-- group: keycloak.infra.doodle.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: doodle.com
+  group: keycloak.infra.doodle.com
   kind: KeycloakClient
+  path: github.com/doodlescheduling/keycloak-controller/api/v1beta1
   version: v1beta1
-- group: keycloak.infra.doodle.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: doodle.com
+  group: keycloak.infra.doodle.com
   kind: KeycloakUser
+  path: github.com/doodlescheduling/keycloak-controller/api/v1beta1
   version: v1beta1
-version: "2"
+version: "3"

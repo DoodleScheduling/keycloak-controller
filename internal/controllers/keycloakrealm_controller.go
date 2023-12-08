@@ -34,6 +34,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -166,8 +167,14 @@ func (r *KeycloakRealmReconciler) requestsForChangeBySelector(ctx context.Contex
 
 	var reqs []reconcile.Request
 	for _, realm := range list.Items {
-		if matches(o.GetLabels(), realm.Spec.ResourceSelector) {
-			r.Log.V(1).Info("change of referenced resource detected", "namespace", o.GetNamespace(), "name", o.GetName(), "kind", o.GetObjectKind().GroupVersionKind().Kind, "realm", realm.GetName())
+		labelSel, err := metav1.LabelSelectorAsSelector(realm.Spec.ResourceSelector)
+		if err != nil {
+			r.Log.Error(err, "can not select resourceSelector selectors")
+			continue
+		}
+
+		if labelSel.Matches(labels.Set(o.GetLabels())) {
+			r.Log.V(1).Info("referenced resource from a KeycloakRealm changed detected", "namespace", realm.GetNamespace(), "realm-name", realm.GetName())
 			reqs = append(reqs, reconcile.Request{NamespacedName: objectKey(&realm)})
 		}
 	}
@@ -381,7 +388,9 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 	template := &corev1.Pod{}
 
 	if realm.Spec.ReconcilerTemplate != nil {
-		template = realm.Spec.ReconcilerTemplate.DeepCopy()
+		template.ObjectMeta.Labels = realm.Spec.ReconcilerTemplate.Labels
+		template.ObjectMeta.Annotations = realm.Spec.ReconcilerTemplate.Annotations
+		realm.Spec.ReconcilerTemplate.Spec.DeepCopyInto(&template.Spec)
 	}
 
 	template.Name = secret.Name
@@ -389,6 +398,8 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 	template.Namespace = realm.Namespace
 	template.ResourceVersion = ""
 	template.UID = ""
+
+	r.Log.Info("reconciler", "template", template.Labels)
 
 	if template.Annotations == nil {
 		template.Annotations = make(map[string]string)
@@ -700,27 +711,6 @@ func (r *KeycloakRealmReconciler) extendRealmWithUsers(ctx context.Context, real
 	})
 
 	return realm, nil
-}
-
-func matches(labels map[string]string, selector *metav1.LabelSelector) bool {
-	if selector == nil {
-		return true
-	}
-
-	for kS, vS := range selector.MatchLabels {
-		var match bool
-		for kL, vL := range selector.MatchLabels {
-			if kS == kL && vS == vL {
-				match = true
-			}
-		}
-
-		if !match {
-			return false
-		}
-	}
-
-	return true
 }
 
 func (r *KeycloakRealmReconciler) substituteSecrets(ctx context.Context, realm infrav1beta1.KeycloakRealm) (string, error) {
