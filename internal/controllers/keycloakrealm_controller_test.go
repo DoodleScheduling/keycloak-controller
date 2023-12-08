@@ -1336,7 +1336,12 @@ var _ = Describe("KeycloakRealm controller", func() {
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
 					Version: "22.0.1",
-					ReconcilerTemplate: &corev1.Pod{
+					ReconcilerTemplate: &v1beta1.ReconcilerTemplate{
+						ObjectMetadata: v1beta1.ObjectMetadata{
+							Labels: map[string]string{
+								"test": "label",
+							},
+						},
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
@@ -1439,6 +1444,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 				},
 			}
 
+			Expect(pod.Labels["test"]).Should(Equal("label"))
 			Expect(pod.Spec.Containers[1].Name).Should(Equal("sidecar"))
 			Expect(pod.Spec.Containers[1].Image).Should(Equal("sidecar:1"))
 			Expect(pod.Spec.Containers[0].Image).Should(Equal("custom-image:1"))
