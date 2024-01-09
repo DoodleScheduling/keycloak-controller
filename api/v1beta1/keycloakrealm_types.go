@@ -208,7 +208,7 @@ type KeycloakAPIRealm struct {
 	Realm string `json:"realm,omitempty"`
 	// Realm enabled flag.
 	// +optional
-	Enabled bool `json:"enabled,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
 	// Realm display name.
 	// +optional
 	DisplayName string `json:"displayName,omitempty"`
@@ -451,10 +451,10 @@ type KeycloakAPIRealm struct {
 	EventsExpiration                    int64             `json:"eventsExpiration,omitempty"`
 	OfflineSessionIdleTimeout           int32             `json:"offlineSessionIdleTimeout,omitempty"`
 	OfflineSessionMaxLifespan           int32             `json:"offlineSessionMaxLifespan,omitempty"`
-	OfflineSessionMaxLifespanEnabled    bool              `json:"offlineSessionMaxLifespanEnabled,omitempty"`
+	OfflineSessionMaxLifespanEnabled    *bool             `json:"offlineSessionMaxLifespanEnabled,omitempty"`
 	RefreshTokenMaxReuse                int32             `json:"refreshTokenMaxReuse,omitempty"`
 	RequiredActions                     extv1.JSON        `json:"requiredActions,omitempty"`
-	RevokeRefreshToken                  bool              `json:"revokeRefreshToken,omitempty"`
+	RevokeRefreshToken                  *bool             `json:"revokeRefreshToken,omitempty"`
 
 	SSOSessionIdleTimeout           int32 `json:"ssoSessionIdleTimeout,omitempty"`
 	SSOSessionIdleTimeoutRememberMe int32 `json:"ssoSessionIdleTimeoutRememberMe,omitempty"`
@@ -466,12 +466,12 @@ type KeycloakAPIRealm struct {
 	WebAuthnPolicyAcceptableAaguids                           []string `json:"webAuthnPolicyAcceptableAaguids,omitempty"`
 	WebAuthnPolicyAttestationConveyancePreference             string   `json:"webAuthnPolicyAttestationConveyancePreference,omitempty"`
 	WebAuthnPolicyAuthenticatorAttachment                     string   `json:"webAuthnPolicyAuthenticatorAttachment,omitempty"`
-	WebAuthnPolicyAvoidSameAuthenticatorRegister              bool     `json:"webAuthnPolicyAvoidSameAuthenticatorRegister,omitempty"`
+	WebAuthnPolicyAvoidSameAuthenticatorRegister              *bool    `json:"webAuthnPolicyAvoidSameAuthenticatorRegister,omitempty"`
 	WebAuthnPolicyCreateTimeout                               int32    `json:"webAuthnPolicyCreateTimeout,omitempty"`
 	WebAuthnPolicyPasswordlessAcceptableAaguids               []string `json:"webAuthnPolicyPasswordlessAcceptableAaguids,omitempty"`
 	WebAuthnPolicyPasswordlessAttestationConveyancePreference string   `json:"webAuthnPolicyPasswordlessAttestationConveyancePreference,omitempty"`
 	WebAuthnPolicyPasswordlessAuthenticatorAttachment         string   `json:"webAuthnPolicyPasswordlessAuthenticatorAttachment,omitempty"`
-	WebAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister  bool     `json:"webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister,omitempty"`
+	WebAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister  *bool    `json:"webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister,omitempty"`
 	WebAuthnPolicyPasswordlessCreateTimeout                   int32    `json:"webAuthnPolicyPasswordlessCreateTimeout,omitempty"`
 	WebAuthnPolicyPasswordlessRequireResidentKey              string   `json:"webAuthnPolicyPasswordlessRequireResidentKey,omitempty"`
 	WebAuthnPolicyPasswordlessRpEntityName                    string   `json:"webAuthnPolicyPasswordlessRpEntityName,omitempty"`
@@ -624,7 +624,7 @@ type KeycloakAPIAuthenticationFlow struct {
 
 	// Built in
 	// +optional
-	BuiltIn bool `json:"builtIn,omitempty"`
+	BuiltIn *bool `json:"builtIn,omitempty"`
 
 	// Description
 	// +optional
@@ -640,7 +640,7 @@ type KeycloakAPIAuthenticationFlow struct {
 
 	// Top level
 	// +optional
-	TopLevel bool `json:"topLevel,omitempty"`
+	TopLevel *bool `json:"topLevel,omitempty"`
 }
 
 type KeycloakAPIAuthenticationExecution struct {
@@ -653,7 +653,7 @@ type KeycloakAPIAuthenticationExecution struct {
 
 	// Authenticator flow
 	// +optional
-	AuthenticatorFlow bool `json:"authenticatorFlow,omitempty"`
+	AuthenticatorFlow *bool `json:"authenticatorFlow,omitempty"`
 
 	// Flow Alias
 	// +optional
@@ -668,7 +668,7 @@ type KeycloakAPIAuthenticationExecution struct {
 
 	// User setup allowed
 	// +optional
-	UserSetupAllowed bool `json:"userSetupAllowed,omitempty"`
+	UserSetupAllowed *bool `json:"userSetupAllowed,omitempty"`
 }
 
 type KeycloakAPIAuthenticatorConfig struct {
@@ -723,16 +723,16 @@ type KeycloakIdentityProvider struct {
 	ProviderID string `json:"providerId,omitempty"`
 	// Identity Provider enabled flag.
 	// +optional
-	Enabled bool `json:"enabled,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
 	// Identity Provider Trust Email.
 	// +optional
-	TrustEmail bool `json:"trustEmail,omitempty"`
+	TrustEmail *bool `json:"trustEmail,omitempty"`
 	// Identity Provider Store to Token.
 	// +optional
-	StoreToken bool `json:"storeToken,omitempty"`
+	StoreToken *bool `json:"storeToken,omitempty"`
 	// Adds Read Token role when creating this Identity Provider.
 	// +optional
-	AddReadTokenRoleOnCreate bool `json:"addReadTokenRoleOnCreate,omitempty"`
+	AddReadTokenRoleOnCreate *bool `json:"addReadTokenRoleOnCreate,omitempty"`
 	// Identity Provider First Broker Login Flow Alias.
 	// +optional
 	FirstBrokerLoginFlowAlias string `json:"firstBrokerLoginFlowAlias,omitempty"`
@@ -741,7 +741,7 @@ type KeycloakIdentityProvider struct {
 	PostBrokerLoginFlowAlias string `json:"postBrokerLoginFlowAlias,omitempty"`
 	// Identity Provider Link Only setting.
 	// +optional
-	LinkOnly bool `json:"linkOnly,omitempty"`
+	LinkOnly *bool `json:"linkOnly,omitempty"`
 	// Identity Provider config.
 	// +optional
 	Config map[string]string `json:"config,omitempty"`
@@ -765,8 +765,8 @@ type KeycloakUserRole struct {
 	ID          string `json:"id,omitempty"`
 	Name        string `json:"name,omitempty"`
 	Description string `json:"description,omitempty"`
-	Composite   bool   `json:"composite,omitempty"`
-	ClientRole  bool   `json:"clientRole,omitempty"`
+	Composite   *bool  `json:"composite,omitempty"`
+	ClientRole  *bool  `json:"clientRole,omitempty"`
 	ContainerID string `json:"containerId,omitempty"`
 }
 
@@ -791,7 +791,7 @@ type KeycloakAPIPasswordReset struct {
 	Value string `json:"value"`
 	// True if this Password Reset object is temporary.
 	// +optional
-	Temporary bool `json:"temporary"`
+	Temporary *bool `json:"temporary"`
 }
 
 type AuthenticationExecutionInfo struct {
@@ -803,10 +803,10 @@ type AuthenticationExecutionInfo struct {
 	AuthenticationConfig string `json:"authenticationConfig,omitempty"`
 	// True if Authentication Flow is enabled.
 	// +optional
-	AuthenticationFlow bool `json:"authenticationFlow,omitempty"`
+	AuthenticationFlow *bool `json:"authenticationFlow,omitempty"`
 	// True if Authentication Execution Info is configurable.
 	// +optional
-	Configurable bool `json:"configurable,omitempty"`
+	Configurable *bool `json:"configurable,omitempty"`
 	// Authentication Execution Info Display Name.
 	// +optional
 	DisplayName string `json:"displayName,omitempty"`

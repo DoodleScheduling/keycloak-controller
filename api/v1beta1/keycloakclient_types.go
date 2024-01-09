@@ -76,10 +76,10 @@ type KeycloakAPIClient struct {
 	Name string `json:"name,omitempty"`
 	// Surrogate Authentication Required option.
 	// +optional
-	SurrogateAuthRequired bool `json:"surrogateAuthRequired,omitempty"`
+	SurrogateAuthRequired *bool `json:"surrogateAuthRequired,omitempty"`
 	// Client enabled flag.
 	// +optional
-	Enabled bool `json:"enabled,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
 	// What Client authentication type to use.
 	// +optional
 	ClientAuthenticatorType string `json:"clientAuthenticatorType,omitempty"`
@@ -112,28 +112,28 @@ type KeycloakAPIClient struct {
 	NotBefore int `json:"notBefore,omitempty"`
 	// True if a client supports only Bearer Tokens.
 	// +optional
-	BearerOnly bool `json:"bearerOnly,omitempty"`
+	BearerOnly *bool `json:"bearerOnly,omitempty"`
 	// True if Consent Screen is required.
 	// +optional
-	ConsentRequired bool `json:"consentRequired,omitempty"`
+	ConsentRequired *bool `json:"consentRequired,omitempty"`
 	// True if Standard flow is enabled.
 	// +optional
-	StandardFlowEnabled bool `json:"standardFlowEnabled,omitempty"`
+	StandardFlowEnabled *bool `json:"standardFlowEnabled,omitempty"`
 	// True if Implicit flow is enabled.
 	// +optional
-	ImplicitFlowEnabled bool `json:"implicitFlowEnabled,omitempty"`
+	ImplicitFlowEnabled *bool `json:"implicitFlowEnabled,omitempty"`
 	// True if Direct Grant is enabled.
 	// +optional
-	DirectAccessGrantsEnabled bool `json:"directAccessGrantsEnabled,omitempty"`
+	DirectAccessGrantsEnabled *bool `json:"directAccessGrantsEnabled,omitempty"`
 	// True if Service Accounts are enabled.
 	// +optional
-	ServiceAccountsEnabled bool `json:"serviceAccountsEnabled,omitempty"`
+	ServiceAccountsEnabled *bool `json:"serviceAccountsEnabled,omitempty"`
 	// True if this is a public Client.
 	// +optional
-	PublicClient bool `json:"publicClient,omitempty"`
+	PublicClient *bool `json:"publicClient,omitempty"`
 	// True if this client supports Front Channel logout.
 	// +optional
-	FrontchannelLogout bool `json:"frontchannelLogout,omitempty"`
+	FrontchannelLogout *bool `json:"frontchannelLogout,omitempty"`
 	// Protocol used for this Client.
 	// +optional
 	Protocol string `json:"protocol,omitempty"`
@@ -151,13 +151,13 @@ type KeycloakAPIClient struct {
 	ProtocolMappers []KeycloakProtocolMapper `json:"protocolMappers,omitempty"`
 	// True to use a Template Config.
 	// +optional
-	UseTemplateConfig bool `json:"useTemplateConfig,omitempty"`
+	UseTemplateConfig *bool `json:"useTemplateConfig,omitempty"`
 	// True to use Template Scope.
 	// +optional
-	UseTemplateScope bool `json:"useTemplateScope,omitempty"`
+	UseTemplateScope *bool `json:"useTemplateScope,omitempty"`
 	// True to use Template Mappers.
 	// +optional
-	UseTemplateMappers bool `json:"useTemplateMappers,omitempty"`
+	UseTemplateMappers *bool `json:"useTemplateMappers,omitempty"`
 	// Access options.
 	// +optional
 	Access map[string]bool `json:"access,omitempty"`
@@ -174,14 +174,14 @@ type KeycloakAPIClient struct {
 	DefaultClientScopes []string `json:"defaultClientScopes,omitempty"`
 	// True if fine-grained authorization support is enabled for this client.
 	// +optional
-	AuthorizationServicesEnabled bool `json:"authorizationServicesEnabled,omitempty"`
+	AuthorizationServicesEnabled *bool `json:"authorizationServicesEnabled,omitempty"`
 	// Authorization settings for this resource server.
 	// +optional
 	AuthorizationSettings *KeycloakResourceServer `json:"authorizationSettings,omitempty"`
 	// Authentication Flow Binding Overrides.
 	// +optional
 	AuthenticationFlowBindingOverrides map[string]string `json:"authenticationFlowBindingOverrides,omitempty"`
-	AlwaysDisplayInConsole             bool              `json:"alwaysDisplayInConsole,omitempty"`
+	AlwaysDisplayInConsole             *bool             `json:"alwaysDisplayInConsole,omitempty"`
 }
 
 type KeycloakProtocolMapper struct {
@@ -199,7 +199,7 @@ type KeycloakProtocolMapper struct {
 	ProtocolMapper string `json:"protocolMapper,omitempty"`
 	// True if Consent Screen is required.
 	// +optional
-	ConsentRequired bool `json:"consentRequired,omitempty"`
+	ConsentRequired *bool `json:"consentRequired,omitempty"`
 	// Text to use for displaying Consent Screen.
 	// +optional
 	ConsentText string `json:"consentText,omitempty"`
@@ -212,7 +212,7 @@ type KeycloakProtocolMapper struct {
 type KeycloakResourceServer struct {
 	// True if resources should be managed remotely by the resource server.
 	// +optional
-	AllowRemoteResourceManagement bool `json:"allowRemoteResourceManagement,omitempty"`
+	AllowRemoteResourceManagement *bool `json:"allowRemoteResourceManagement,omitempty"`
 	// Client ID.
 	// +optional
 	ClientID string `json:"clientId,omitempty"`
@@ -320,7 +320,7 @@ type KeycloakResource struct {
 	Name string `json:"name,omitempty"`
 	// True if the access to this resource can be managed by the resource owner.
 	// +optional
-	OwnerManagedAccess bool `json:"ownerManagedAccess,omitempty"`
+	OwnerManagedAccess *bool `json:"ownerManagedAccess,omitempty"`
 	// The type of this resource. It can be used to group different resource instances with the same type.
 	// +optional
 	Type string `json:"type,omitempty"`

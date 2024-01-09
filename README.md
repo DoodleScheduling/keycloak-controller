@@ -177,6 +177,10 @@ spec:
     accessTokenLifespan: 300
 ```
 
+### Beta API notice
+For v0.x releases and beta api we try not to break the API specs. However
+in rare cases backports happen to fix major issues.
+
 ### Secret substitution
 
 All fields support secret subsitution from kubernetes secrets.
@@ -232,6 +236,17 @@ spec:
       - name: random-sidecar
         image: mysidecar
 ```
+
+## Suspend/Resume reconciliation
+
+The controller tries to reconcile the realm in the specified interval (if specified) or if there is any spec change.
+The reconciliation can be paused by setting `spec.suspend` to `true`:
+
+```
+kubectl patch keycloakrealms myrealm -p '{"spec":{"suspend": true}}' --type=merge
+```
+
+This can be very useful if one wants to change and test some settings using the keycloak web ui where the controller should not interfere.
 
 ## Observe KeycloakRealm reconciliation
 
@@ -386,17 +401,6 @@ Please see [chart/keycloak-controller](https://github.com/DoodleScheduling/keycl
 ### Manifests/kustomize
 
 Alternatively you may get the bundled manifests in each release to deploy it using kustomize or use them directly.
-
-## Dealing with managed realms
-
-The controller tries to reconcile the realm in the specified interval (if specified) or if there is any spec change.
-The reconciliation can be paused by setting `spec.suspend` to `true`:
-
-```
-kubectl patch keycloakrealms.keycloak.infra.doodle.com myrealm -p '{"spec":{"suspend": true}}' --type=merge
-```
-
-This can be very useful if one wants to change and test some settings using the keycloak web ui where the controller should not interfere.
 
 ## Configuration
 The controller can be configured using cmd args:
