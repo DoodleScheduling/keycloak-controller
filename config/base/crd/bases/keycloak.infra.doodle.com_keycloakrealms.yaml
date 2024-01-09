@@ -9179,6 +9179,10 @@ spec:
                   by the controller
                 format: int64
                 type: integer
+              observedSHA256:
+                description: ObservedSHA256 is a SHA256 hash over the realm and all
+                  sub resources
+                type: string
               reconciler:
                 description: Reconciler is the reconciler pod while a reconciliation
                   is in progress

@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -251,6 +252,10 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 		return realm, ctrl.Result{}, err
 	}
 
+	checksumSha := sha256.New()
+	checksumSha.Write([]byte(raw))
+	checksum := fmt.Sprintf("%x", checksumSha.Sum(nil))
+
 	pod := &corev1.Pod{}
 	secret := &corev1.Secret{}
 
@@ -269,6 +274,11 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 		specVersion, ok := pod.Annotations["keycloak-controller/realm-spec-version"]
 		if !needUpdate && podErr == nil && ok {
 			needUpdate = specVersion != fmt.Sprintf("%d", realm.Generation)
+		}
+
+		specChecksum, ok := pod.Annotations["keycloak-controller/realm-checksum"]
+		if !needUpdate && podErr == nil && ok {
+			needUpdate = specChecksum != checksum
 		}
 
 		if !ok {
@@ -356,7 +366,7 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 	}
 
 	ready := conditions.Get(&realm, infrav1beta1.ConditionReady)
-	if ready != nil && ready.Status == metav1.ConditionTrue && (realm.Spec.Interval == nil || time.Since(ready.LastTransitionTime.Time) < realm.Spec.Interval.Duration) && realm.Generation == ready.ObservedGeneration {
+	if ready != nil && ready.Status == metav1.ConditionTrue && (realm.Spec.Interval == nil || time.Since(ready.LastTransitionTime.Time) < realm.Spec.Interval.Duration) && checksum == realm.Status.ObservedSHA256 && realm.Generation == ready.ObservedGeneration {
 		logger.V(1).Info("skip reconcilation, last transition time too recent")
 		return realm, ctrl.Result{}, nil
 	}
@@ -404,7 +414,10 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 	if template.Annotations == nil {
 		template.Annotations = make(map[string]string)
 	}
+
+	realm.Status.ObservedSHA256 = checksum
 	template.Annotations["keycloak-controller/realm-spec-version"] = fmt.Sprintf("%d", realm.Generation)
+	template.Annotations["keycloak-controller/realm-checksum"] = checksum
 
 	usernameField := "username"
 	passwordField := "password"
