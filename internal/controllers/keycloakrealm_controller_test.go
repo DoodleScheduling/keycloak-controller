@@ -1657,7 +1657,8 @@ var _ = Describe("KeycloakRealm controller", func() {
 
 			beforeUpdateStatus := reconciledInstance.Status
 
-			user.Spec.User.Enabled = true
+			enabled := true
+			user.Spec.User.Enabled = &enabled
 			Expect(k8sClient.Update(ctx, user)).Should(Succeed())
 
 			Eventually(func() bool {
