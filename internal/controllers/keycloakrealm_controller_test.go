@@ -1143,7 +1143,8 @@ var _ = Describe("KeycloakRealm controller", func() {
 
 			beforeUpdateStatus := reconciledInstance.Status
 
-			user.Spec.User.Enabled = true
+			enabled := true
+			user.Spec.User.Enabled = &enabled
 			Expect(k8sClient.Update(ctx, user)).Should(Succeed())
 
 			Eventually(func() bool {
@@ -1273,7 +1274,10 @@ var _ = Describe("KeycloakRealm controller", func() {
 
 			beforeUpdateStatus := reconciledInstance.Status
 
-			client.Spec.Client.Enabled = true
+			publicClient := false
+			enabled := true
+			client.Spec.Client.Enabled = &enabled
+			client.Spec.Client.PublicClient = &publicClient
 			Expect(k8sClient.Update(ctx, client)).Should(Succeed())
 
 			Eventually(func() bool {
@@ -1305,7 +1309,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 				}, &secret)
 			}, timeout, interval).Should(BeNil())
 
-			Expect(string(secret.Data["realm.json"])).Should(Equal(fmt.Sprintf(`{"realm":"%s","clients":[{"clientId":"%s","enabled":true}],"components":null,"requiredActions":null}`, realm.Name, clientName)))
+			Expect(string(secret.Data["realm.json"])).Should(Equal(fmt.Sprintf(`{"realm":"%s","clients":[{"clientId":"%s","enabled":true,"publicClient":false}],"components":null,"requiredActions":null}`, realm.Name, clientName)))
 		})
 	})
 

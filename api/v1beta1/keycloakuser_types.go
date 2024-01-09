@@ -56,10 +56,10 @@ type KeycloakAPIUser struct {
 	Email string `json:"email,omitempty"`
 	// True if email has already been verified.
 	// +optional
-	EmailVerified bool `json:"emailVerified,omitempty"`
+	EmailVerified *bool `json:"emailVerified,omitempty"`
 	// User enabled flag.
 	// +optional
-	Enabled bool `json:"enabled,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
 	// A set of Realm Roles.
 	// +optional
 	RealmRoles []string `json:"realmRoles,omitempty"`
@@ -85,7 +85,7 @@ type KeycloakAPIUser struct {
 
 	DisableableCredentialTypes []string `json:"disableableCredentialTypes,omitempty"`
 	ServiceAccountClientId     string   `json:"serviceAccountClientId,omitempty"`
-	TOTP                       bool     `json:"totp,omitempty"`
+	TOTP                       *bool    `json:"totp,omitempty"`
 }
 
 type KeycloakCredential struct {
@@ -97,7 +97,7 @@ type KeycloakCredential struct {
 	Value string `json:"value,omitempty"`
 	// True if this credential object is temporary.
 	// +optional
-	Temporary bool `json:"temporary,omitempty"`
+	Temporary *bool `json:"temporary,omitempty"`
 }
 
 type FederatedIdentity struct {
