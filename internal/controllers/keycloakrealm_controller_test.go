@@ -189,6 +189,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 			Expect(pod.Spec.Containers[0].Image).Should(Equal("test:latest-22.0.1"))
 			Expect(pod.Spec.Containers[0].Env).Should(Equal(envs))
 			Expect(reconciledInstance.Status.SubResourceCatalog).Should(HaveLen(0))
+			Expect(reconciledInstance.Status.ObservedSHA256).Should(HaveLen(64))
 
 			By("validating the realm secret")
 			secret := corev1.Secret{}
@@ -1553,6 +1554,138 @@ var _ = Describe("KeycloakRealm controller", func() {
 
 				return needStatus(reconciledInstance, expectedStatus)
 			}, timeout, interval).Should(BeTrue())
+		})
+	})
+
+	When("a realm with an interval > 0 is triggered if a user is changed", func() {
+		realmName := fmt.Sprintf("realm-%s", rand.String(5))
+		userName := fmt.Sprintf("user-%s", rand.String(5))
+
+		It("recreates the reconciler with a new secret", func() {
+			By("creating a new KeycloakRealm")
+			ctx := context.Background()
+
+			authSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fmt.Sprintf("auth-%s", rand.String(5)),
+					Namespace: "default",
+				},
+				StringData: map[string]string{
+					"username": "kc-user",
+					"password": "kc-password",
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, authSecret)).Should(Succeed())
+
+			user := &v1beta1.KeycloakUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      userName,
+					Namespace: "default",
+					Labels: map[string]string{
+						"trigger-checksum-users": "yes",
+					},
+				},
+				Spec: v1beta1.KeycloakUserSpec{},
+			}
+			Expect(k8sClient.Create(ctx, user)).Should(Succeed())
+
+			realm := &v1beta1.KeycloakRealm{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      realmName,
+					Namespace: "default",
+				},
+				Spec: v1beta1.KeycloakRealmSpec{
+					Interval: &metav1.Duration{Duration: time.Second * 100},
+					Version:  "22.0.1",
+					AuthSecret: v1beta1.SecretReference{
+						Name: authSecret.Name,
+					},
+					ResourceSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"trigger-checksum-users": "yes",
+						},
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, realm)).Should(Succeed())
+
+			By("waiting for the reconciliation")
+			instanceLookupKey := types.NamespacedName{Name: realmName, Namespace: "default"}
+			reconciledInstance := &v1beta1.KeycloakRealm{}
+
+			expectedStatus := &v1beta1.KeycloakRealmStatus{
+				ObservedGeneration: 1,
+				Conditions: []metav1.Condition{
+					{
+						Type:    v1beta1.ConditionReady,
+						Status:  metav1.ConditionUnknown,
+						Reason:  "Progressing",
+						Message: "Reconciliation in progress",
+					},
+					{
+						Type:   v1beta1.ConditionReconciling,
+						Status: metav1.ConditionTrue,
+						Reason: "Progressing",
+					},
+				},
+			}
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, instanceLookupKey, reconciledInstance)
+				if err != nil {
+					return false
+				}
+
+				return needStatus(reconciledInstance, expectedStatus)
+			}, timeout, interval).Should(BeTrue())
+
+			By("validating the realm secret")
+			secret := corev1.Secret{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{
+					Name:      reconciledInstance.Status.Reconciler,
+					Namespace: reconciledInstance.Namespace,
+				}, &secret)
+			}, timeout, interval).Should(BeNil())
+
+			Expect(string(secret.Data["realm.json"])).Should(Equal(fmt.Sprintf(`{"realm":"%s","users":[{"username":"%s"}],"components":null,"requiredActions":null}`, realm.Name, userName)))
+
+			beforeUpdateStatus := reconciledInstance.Status
+
+			user.Spec.User.Enabled = true
+			Expect(k8sClient.Update(ctx, user)).Should(Succeed())
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, instanceLookupKey, reconciledInstance)
+				if err != nil {
+					return false
+				}
+
+				return needStatus(reconciledInstance, expectedStatus) && reconciledInstance.Status.Reconciler != beforeUpdateStatus.Reconciler
+			}, timeout, interval).Should(BeTrue())
+
+			By("making sure the resource catalog is correct")
+			catalog := []v1beta1.ResourceReference{
+				{
+					Kind:       "KeycloakUser",
+					Name:       userName,
+					APIVersion: v1beta1.GroupVersion.String(),
+				},
+			}
+
+			Expect(reconciledInstance.Status.SubResourceCatalog).Should(Equal(catalog))
+
+			By("validating the realm secret")
+			secret = corev1.Secret{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{
+					Name:      reconciledInstance.Status.Reconciler,
+					Namespace: reconciledInstance.Namespace,
+				}, &secret)
+			}, timeout, interval).Should(BeNil())
+
+			Expect(string(secret.Data["realm.json"])).Should(Equal(fmt.Sprintf(`{"realm":"%s","users":[{"username":"%s","enabled":true}],"components":null,"requiredActions":null}`, realm.Name, userName)))
 		})
 	})
 })

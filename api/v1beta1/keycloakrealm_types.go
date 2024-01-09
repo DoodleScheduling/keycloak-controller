@@ -138,6 +138,9 @@ type KeycloakRealmStatus struct {
 	// ObservedGeneration is the last generation reconciled by the controller
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
+	// ObservedSHA256 is a SHA256 hash over the realm and all sub resources
+	ObservedSHA256 string `json:"observedSHA256,omitempty"`
+
 	// LastExececutionOutput failed requests
 	// +optional
 	LastExececutionOutput string `json:"lastExececutionOutput,omitempty"`
