@@ -870,5 +870,5 @@ type KeycloakAPIGroup struct {
 	RealmRoles  []string            `json:"realmRoles,omitempty"`
 	Attributes  map[string][]string `json:"attributes,omitempty"`
 	ClientRoles map[string][]string `json:"clientRoles,omitempty"`
-	SubGroups   []KeycloakAPIGroup  `json:"subGroups,omitempty"`
+	SubGroups   []extv1.JSON        `json:"subGroups,omitempty"`
 }

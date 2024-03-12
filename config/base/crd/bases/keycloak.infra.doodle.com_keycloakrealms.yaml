@@ -997,7 +997,8 @@ spec:
                             type: string
                           type: array
                         subGroups:
-                          items: {}
+                          items:
+                            x-kubernetes-preserve-unknown-fields: true
                           type: array
                       type: object
                     type: array

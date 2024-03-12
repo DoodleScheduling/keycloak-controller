@@ -388,7 +388,7 @@ func (in *KeycloakAPIGroup) DeepCopyInto(out *KeycloakAPIGroup) {
 	}
 	if in.SubGroups != nil {
 		in, out := &in.SubGroups, &out.SubGroups
-		*out = make([]KeycloakAPIGroup, len(*in))
+		*out = make([]apiextensionsv1.JSON, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
