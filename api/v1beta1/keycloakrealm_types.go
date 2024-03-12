@@ -240,7 +240,7 @@ type KeycloakAPIRealm struct {
 	// Enabled event types
 	// +optional
 
-	Groups []string `json:"groups,omitempty"`
+	Groups []KeycloakAPIGroup `json:"groups,omitempty"`
 
 	EnabledEventTypes []string `json:"enabledEventTypes,omitempty"`
 	// Enable events recording
@@ -861,4 +861,14 @@ type TokenResponse struct {
 	// Token Response Error Description.
 	// +optional
 	ErrorDescription string `json:"error_description"`
+}
+
+type KeycloakAPIGroup struct {
+	ID          string              `json:"id,omitempty"`
+	Name        string              `json:"name,omitempty"`
+	Path        string              `json:"path,omitempty"`
+	RealmRoles  []string            `json:"realmRoles,omitempty"`
+	Attributes  map[string][]string `json:"attributes,omitempty"`
+	ClientRoles map[string][]string `json:"clientRoles,omitempty"`
+	SubGroups   []KeycloakAPIGroup  `json:"subGroups,omitempty"`
 }
