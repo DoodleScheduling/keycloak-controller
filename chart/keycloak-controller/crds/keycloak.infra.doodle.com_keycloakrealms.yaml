@@ -973,7 +973,34 @@ spec:
                     type: integer
                   groups:
                     items:
-                      type: string
+                      properties:
+                        attributes:
+                          additionalProperties:
+                            items:
+                              type: string
+                            type: array
+                          type: object
+                        clientRoles:
+                          additionalProperties:
+                            items:
+                              type: string
+                            type: array
+                          type: object
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        path:
+                          type: string
+                        realmRoles:
+                          items:
+                            type: string
+                          type: array
+                        subGroups:
+                          items:
+                            x-kubernetes-preserve-unknown-fields: true
+                          type: array
+                      type: object
                     type: array
                   id:
                     description: ID is the internal keycloak id
