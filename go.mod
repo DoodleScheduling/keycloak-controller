@@ -6,7 +6,7 @@ require (
 	github.com/fluxcd/pkg/runtime v0.42.0
 	github.com/go-logr/logr v1.4.1
 	github.com/kylelemons/godebug v1.1.0
-	github.com/onsi/ginkgo/v2 v2.16.0
+	github.com/onsi/ginkgo/v2 v2.17.0
 	github.com/onsi/gomega v1.31.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
