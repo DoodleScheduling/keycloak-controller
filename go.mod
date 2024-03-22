@@ -12,9 +12,9 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/tj/assert v0.0.3
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.35.1
-	go.opentelemetry.io/otel v1.13.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.13.0
-	go.opentelemetry.io/otel/sdk v1.13.0
+	go.opentelemetry.io/otel v1.24.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.24.0
+	go.opentelemetry.io/otel/sdk v1.24.0
 	google.golang.org/grpc v1.62.1
 	k8s.io/api v0.27.4
 	k8s.io/apiextensions-apiserver v0.27.3
