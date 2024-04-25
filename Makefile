@@ -65,7 +65,7 @@ lint: golangci-lint ## Run golangci-lint against code
 	$(GOLANGCI_LINT) run --timeout=2m ./...
 
 .PHONY: test
-test: manifests generate fmt vet tidy envtest ## Run tests.
+test: envtest manifests generate fmt vet tidy ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -v -coverprofile coverage.out -race
 
 ##@ Build
@@ -153,9 +153,9 @@ kustomize: ## Download kustomize locally if necessary.
 ENVTEST = $(GOBIN)/setup-envtest
 .PHONY: envtest
 envtest: ## Download envtest-setup locally if necessary.
-	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
+	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.17)
 
-# go-install-tool will 'go install' any package $2 and install it to $1
+# go-install-tool will 'go install' any package $2 and install it to $1.
 define go-install-tool
 @[ -f $(1) ] || { \
 set -e ;\

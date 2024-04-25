@@ -331,16 +331,10 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 			return realm, ctrl.Result{Requeue: true}, nil
 		case containerStatus.State.Waiting != nil:
 			realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", containerStatus.State.Waiting.Message)
-			return realm, ctrl.Result{}, nil
 		case containerStatus.State.Terminated != nil && containerStatus.State.Terminated.ExitCode == 0:
 			r.Log.Info("reconciler pod succeeded")
 			if err := cleanup(); err != nil {
 				return realm, ctrl.Result{}, err
-			}
-
-			result := ctrl.Result{}
-			if realm.Spec.Interval != nil {
-				result.RequeueAfter = realm.Spec.Interval.Duration
 			}
 
 			realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionTrue, "ReconciliationSucceeded", "")
@@ -350,11 +344,16 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 
 			msg := "Realm successfully reconciled"
 			r.Recorder.Event(&realm, "Normal", "info", msg)
-
-			return realm, result, nil
 		case containerStatus.State.Terminated != nil:
-			realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", fmt.Sprintf("reconciled exit with code %d", containerStatus.State.Terminated.ExitCode))
-			return realm, ctrl.Result{}, nil
+			realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", fmt.Sprintf("reconciler exit with code %d", containerStatus.State.Terminated.ExitCode))
+		case containerStatus.State.Running != nil && realm.Spec.Timeout != nil && time.Since(containerStatus.State.Running.StartedAt.Time) >= realm.Spec.Timeout.Duration:
+			if err := cleanup(); err != nil {
+				return realm, ctrl.Result{}, err
+			}
+
+			conditions.Delete(&realm, infrav1beta1.ConditionReconciling)
+			realm.Status.Reconciler = ""
+			return realm, reconcile.Result{}, errors.New("reconciler timeout reached")
 		}
 
 		result := ctrl.Result{}
@@ -366,9 +365,16 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 	}
 
 	ready := conditions.Get(&realm, infrav1beta1.ConditionReady)
-	if ready != nil && ready.Status == metav1.ConditionTrue && (realm.Spec.Interval == nil || time.Since(ready.LastTransitionTime.Time) < realm.Spec.Interval.Duration) && checksum == realm.Status.ObservedSHA256 && realm.Generation == ready.ObservedGeneration {
+	if ready != nil && ready.Status == metav1.ConditionTrue && (realm.Spec.Interval == nil || time.Since(ready.LastTransitionTime.Time) < realm.Spec.Interval.Duration) && realm.Generation == ready.ObservedGeneration {
 		logger.V(1).Info("skip reconcilation, last transition time too recent")
-		return realm, ctrl.Result{}, nil
+
+		if realm.Spec.Interval != nil {
+			return realm, ctrl.Result{
+				RequeueAfter: realm.Spec.Interval.Duration,
+			}, nil
+		} else {
+			return realm, ctrl.Result{}, nil
+		}
 	}
 
 	r.Recorder.Event(&realm, "Normal", "info", "reconcile realm progressing")
@@ -378,7 +384,12 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 	controllerOwner := true
 	secret = &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("keycloakrealm-%s-%s", realm.Name, rand.String(5)),
+			Name: fmt.Sprintf("keycloakrealm-%s-%s", realm.Name, rand.String(5)),
+			Labels: map[string]string{
+				"app.kubernetes.io/instance": "realm-reconciler",
+				"app.kubernetes.io/name":     "keycloak-controller",
+				"keycloak-controller/realm":  realm.Name,
+			},
 			Namespace: realm.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -408,6 +419,14 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 	template.Namespace = realm.Namespace
 	template.ResourceVersion = ""
 	template.UID = ""
+
+	if template.ObjectMeta.Labels == nil {
+		template.ObjectMeta.Labels = make(map[string]string)
+	}
+
+	template.ObjectMeta.Labels["app.kubernetes.io/instance"] = "realm-reconciler"
+	template.ObjectMeta.Labels["app.kubernetes.io/name"] = "keycloak-controller"
+	template.ObjectMeta.Labels["keycloak-controller/realm"] = realm.Name
 
 	r.Log.Info("reconciler", "template", template.Labels)
 
@@ -532,6 +551,12 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 
 	if err := r.Client.Create(ctx, template); err != nil {
 		return realm, ctrl.Result{}, err
+	}
+
+	if realm.Spec.Timeout != nil {
+		return realm, ctrl.Result{
+			RequeueAfter: realm.Spec.Timeout.Duration,
+		}, nil
 	}
 
 	return realm, ctrl.Result{}, err
