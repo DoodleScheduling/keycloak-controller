@@ -45,7 +45,8 @@ spec:
   address: http://keycloak-http.keycloak/auth
   authSecret:
     name: keycloak-admin
-  interval: 10m
+  interval: 1h
+  timeout: 5m0s
   realm:
     accessCodeLifespan: 60
     accessCodeLifespanLogin: 1800
@@ -168,7 +169,8 @@ spec:
     name: keycloak-admin
     passwordField: password
     userField: username
-  interval: 10m
+  interval: 1h
+  timeout: 5m0s
   suspend: false
   realm:
     accessCodeLifespan: 60
@@ -212,7 +214,8 @@ spec:
   address: http://keycloak-http.keycloak/auth
   authSecret:
     name: keycloak-admin
-  interval: 10m
+  interval: 1h
+  timeout: 5m0s
   realm:
     accessCodeLifespan: 60
     accessCodeLifespanLogin: 1800
@@ -268,7 +271,8 @@ spec:
   address: http://keycloak-http.keycloak/auth
   authSecret:
     name: keycloak-admin
-  interval: 10m
+  interval: 1h
+  timeout: 5m0s
   realm:
     accessCodeLifespan: 60
     accessCodeLifespanLogin: 1800
