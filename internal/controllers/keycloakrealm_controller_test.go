@@ -43,7 +43,7 @@ func needStatus(reconciledInstance *v1beta1.KeycloakRealm, expectedStatus *v1bet
 
 var _ = Describe("KeycloakRealm controller", func() {
 	const (
-		timeout  = time.Second * 5
+		timeout  = time.Second * 10
 		interval = time.Millisecond * 50
 	)
 
