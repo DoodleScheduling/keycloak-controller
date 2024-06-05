@@ -6,4 +6,4 @@ resources:
 - sa.yaml
 images:
 - name: ghcr.io/doodlescheduling/keycloak-controller
-  newTag: v2.2.0
+  newTag: v2.3.0
