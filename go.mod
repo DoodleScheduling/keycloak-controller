@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/fluxcd/pkg/runtime v0.42.0
-	github.com/go-logr/logr v1.4.1
+	github.com/go-logr/logr v1.4.2
 	github.com/kylelemons/godebug v1.1.0
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
