@@ -7,10 +7,9 @@
 [![Coverage Status](https://coveralls.io/repos/github/DoodleScheduling/keycloak-controller/badge.svg?branch=master)](https://coveralls.io/github/DoodleScheduling/keycloak-controller?branch=master)
 [![license](https://img.shields.io/github/license/DoodleScheduling/keycloak-controller.svg)](https://github.com/DoodleScheduling/keycloak-controller/blob/master/LICENSE)
 
-Keycloak realm management for kubernetes. Compared to the [keycloak-operator](https://github.com/keycloak/keycloak-operator) this controller actually reconciles the entire realm. The keycloak-operator basically only creates the realm and syncs top level changes only.
+Keycloak realm management for kubernetes. Compared to the [keycloak-operator](https://github.com/keycloak/keycloak-operator) this controller actually reconciles the entire realm. The keycloak-operator basically only creates the realm and syncs top level changes.
 
 This controller supports KeycloakRealm, KeycloakClient and KeycloakUser.
-The controller does **not** deploy keycloak, its responsibility is to manage realms for extsing keycloak deployments.
 This controller runs great in combination with the official keycloak operator which deploys keycloak while this controller can manage the realm.
 
 Under the hood the controller is a wrapper around the awesome [keycloak-config-cli](https://github.com/adorsys/keycloak-config-cli)
@@ -19,7 +18,7 @@ which implements the entire realm update using the Keycloak REST API.
 ## Requirements
 
 A running keycloak is a requirement. This controllers does not manage or deploy keycloak itself.
-Also it is required to create a secret which contains the credentials for a user with enough permissions to create/manage realms.
+Also it is required to create a secret which contains the credentials for a user with enough permissions to manage realms.
 
 Example:
 ```yaml
@@ -35,7 +34,7 @@ metadata:
 ## Example KeycloakRealm
 
 The realm is the entire representation of the realm and is reconciled accordingly.
-This would create a realm called default if it does not exists. If it exists it would try to update it according to these specs.
+This would create a realm called default if it does not exists. If it exists the controll will try to update it according to these specs.
 
 ```yaml
 apiVersion: keycloak.infra.doodle.com/v1beta1
@@ -179,10 +178,6 @@ spec:
     accessCodeLifespanUserAction: 300
     accessTokenLifespan: 300
 ```
-
-### Beta API notice
-For v0.x releases and beta api we try not to break the API specs. However
-in rare cases backports happen to fix major issues.
 
 ### Secret substitution
 
