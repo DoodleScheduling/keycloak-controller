@@ -218,3 +218,9 @@ jobs:
           
       - name: Run chart-testing (install)
         run: ct install --target-branch=master --chart-dirs chart
+
+  test-success:
+    runs-on: ubuntu-latest
+    needs: [test, e2e-tests]
+    steps:
+    - run: done
