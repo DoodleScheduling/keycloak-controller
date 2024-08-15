@@ -3,10 +3,14 @@ name: pr-label
 on:
   pull_request:
 
+permissions: {}
+
 jobs:
   size-label:
     runs-on: ubuntu-latest
     if: ${{ !github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]' }}
+    permissions: 
+      pull-requests: write
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0

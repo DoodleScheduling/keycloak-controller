@@ -3,6 +3,7 @@
 [![release](https://img.shields.io/github/release/DoodleScheduling/keycloak-controller/all.svg)](https://github.com/DoodleScheduling/keycloak-controller/releases)
 [![release](https://github.com/doodlescheduling/keycloak-controller/actions/workflows/release.yaml/badge.svg)](https://github.com/doodlescheduling/keycloak-controller/actions/workflows/release.yaml)
 [![report](https://goreportcard.com/badge/github.com/DoodleScheduling/keycloak-controller)](https://goreportcard.com/report/github.com/DoodleScheduling/keycloak-controller)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/DoodleScheduling/keycloak-controller/badge)](https://api.securityscorecards.dev/projects/github.com/DoodleScheduling/keycloak-controller)
 [![Coverage Status](https://coveralls.io/repos/github/DoodleScheduling/keycloak-controller/badge.svg?branch=master)](https://coveralls.io/github/DoodleScheduling/keycloak-controller?branch=master)
 [![license](https://img.shields.io/github/license/DoodleScheduling/keycloak-controller.svg)](https://github.com/DoodleScheduling/keycloak-controller/blob/master/LICENSE)
 
