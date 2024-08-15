@@ -1,0 +1,79 @@
+name: report-on-vulnerabilities
+
+permissions: {}
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 6 * * *'
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    outputs:
+      results: ${{ steps.parse-results.outputs.results }}
+    steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
+      with:
+        egress-policy: audit
+
+    - name: Scan for vulnerabilities
+      uses: aquasecurity/trivy-action@b2933f565dbc598b29947660e66259e3c7bc8561 # 0.20.0
+      with: 
+        image-ref: ghcr.io/doodlescheduling/keycloak-controller:latest
+        format: json
+        scanners: license,vuln,secret
+        ignore-unfixed: false
+        severity: HIGH,CRITICAL
+        output: scan.json
+
+    - name: Parse scan results
+      id: parse-results
+      continue-on-error: true
+      run: |
+        VULNS=$(cat scan.json | jq '.Results[] | length')
+        if [[ $VULNS -eq 0 ]]
+        then
+          echo "No vulnerabilities found, halting"
+          echo "results=nothing" >> $GITHUB_OUTPUT
+        else
+          echo "Vulnerabilities found, creating issue"
+          echo "results=found" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Upload vulnerability scan report
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+      if: steps.parse-results.outputs.results == 'found'
+      with:
+        name: scan.json
+        path: scan.json
+        if-no-files-found: error
+
+  open-issue:
+    runs-on: ubuntu-latest
+    if: needs.scan.outputs.results == 'found'
+    needs: scan
+    permissions:
+      issues: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - name: Download scan
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        with:
+          name: scan.json
+      - name: Set scan output
+        id: set-scan-output
+        run: echo "results=$(cat scan.json | jq -c)" >> $GITHUB_OUTPUT
+      - uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5 # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESULTS: ${{ steps.set-scan-output.outputs.results }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/VULN-TEMPLATE.md

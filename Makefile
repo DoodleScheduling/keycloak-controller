@@ -137,7 +137,7 @@ kind-test: ## Deploy including test
 CONTROLLER_GEN = $(GOBIN)/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.12.0)
+	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.1)
 	cp config/base/crd/bases/* chart/keycloak-controller/crds/
 
 GOLANGCI_LINT = $(GOBIN)/golangci-lint

@@ -4,14 +4,15 @@ on:
     tags:
       - 'v*'
 
-permissions:
-  contents: write # needed to write releases
-  id-token: write # needed for keyless signing
-  packages: write # needed for ghcr access
+permissions: {}
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # needed to write releases
+      id-token: write # needed for keyless signing
+      packages: write # needed for ghcr access
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
@@ -23,7 +24,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: '1.20'
+          go-version: '1.22'
       - name: Docker Login
         uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
