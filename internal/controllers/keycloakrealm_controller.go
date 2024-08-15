@@ -229,12 +229,12 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, ctrl.Result, error) {
 	realm.Status.SubResourceCatalog = []infrav1beta1.ResourceReference{}
 
-	realm, err := r.extendRealmWithClients(ctx, realm, logger)
+	realm, err := r.extendRealmWithClients(ctx, realm)
 	if err != nil {
 		return realm, ctrl.Result{}, err
 	}
 
-	realm, err = r.extendRealmWithUsers(ctx, realm, logger)
+	realm, err = r.extendRealmWithUsers(ctx, realm)
 	if err != nil {
 		return realm, ctrl.Result{}, err
 	}
@@ -366,7 +366,7 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 
 	ready := conditions.Get(&realm, infrav1beta1.ConditionReady)
 	if ready != nil && ready.Status == metav1.ConditionTrue && (realm.Spec.Interval == nil || time.Since(ready.LastTransitionTime.Time) < realm.Spec.Interval.Duration) && realm.Generation == ready.ObservedGeneration {
-		logger.V(1).Info("skip reconcilation, last transition time too recent")
+		logger.V(1).Info("skip reconciliation, last transition time too recent")
 
 		if realm.Spec.Interval != nil {
 			return realm, ctrl.Result{
@@ -456,7 +456,7 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 	}
 
 	if realm.Spec.Version == "" {
-		version, err := r.getKeycloakVersion(ctx, realm, logger, username, password)
+		version, err := r.getKeycloakVersion(ctx, realm, username, password)
 		if err != nil {
 			return realm, reconcile.Result{}, err
 		}
@@ -610,7 +610,7 @@ func extractCredentials(credentials infrav1beta1.SecretReference, secret *corev1
 	return user, pw, nil
 }
 
-func (r *KeycloakRealmReconciler) getKeycloakVersion(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger, username, password string) (string, error) {
+func (r *KeycloakRealmReconciler) getKeycloakVersion(ctx context.Context, realm infrav1beta1.KeycloakRealm, username, password string) (string, error) {
 	formData := url.Values{
 		"username":   {username},
 		"password":   {password},
@@ -622,6 +622,7 @@ func (r *KeycloakRealmReconciler) getKeycloakVersion(ctx context.Context, realm 
 	if err != nil {
 		return "", fmt.Errorf("keycloak token request setup failed: %w", err)
 	}
+	req = req.WithContext(ctx)
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := r.HTTPClient.Do(req)
@@ -685,7 +686,7 @@ func (r *KeycloakRealmReconciler) getKeycloakVersion(ctx context.Context, realm 
 	return systemInfoResponse.SystemInfo.Version, nil
 }
 
-func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
+func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, realm infrav1beta1.KeycloakRealm) (infrav1beta1.KeycloakRealm, error) {
 	var clients infrav1beta1.KeycloakClientList
 	selector, err := metav1.LabelSelectorAsSelector(realm.Spec.ResourceSelector)
 	if err != nil {
@@ -718,7 +719,7 @@ func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, re
 	return realm, nil
 }
 
-func (r *KeycloakRealmReconciler) extendRealmWithUsers(ctx context.Context, realm infrav1beta1.KeycloakRealm, logger logr.Logger) (infrav1beta1.KeycloakRealm, error) {
+func (r *KeycloakRealmReconciler) extendRealmWithUsers(ctx context.Context, realm infrav1beta1.KeycloakRealm) (infrav1beta1.KeycloakRealm, error) {
 	var users infrav1beta1.KeycloakUserList
 	selector, err := metav1.LabelSelectorAsSelector(realm.Spec.ResourceSelector)
 	if err != nil {

@@ -6,18 +6,8 @@ import (
 )
 
 const (
-	ConditionReady                      = "Ready"
-	ConditionReconciling                = "Reconciling"
-	ConditionInfinispanReady            = "InfinispanReady"
-	ConditionKeycloakReady              = "KeycloakReady"
-	ConditionWaitingForCanaryInfinispan = "WaitingForCanaryInfinispan"
-	ConditionWaitingForCanaryKeycloak   = "WaitingForCanaryKeycloak"
-	ConditionCanaryTransitioning        = "CanaryTransitioning"
-
-	ReadyCondition     = "Ready"
-	SynchronizedReason = "Synchronized"
-	ProgressingReason  = "Progressing"
-	FailedReason       = "Failed"
+	ConditionReady       = "Ready"
+	ConditionReconciling = "Reconciling"
 )
 
 // ConditionalResource is a resource with conditions
