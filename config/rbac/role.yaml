@@ -15,16 +15,6 @@ rules:
   - ""
   resources:
   - pods
-  verbs:
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - secrets
   verbs:
   - delete
@@ -37,45 +27,7 @@ rules:
   - keycloak.infra.doodle.com
   resources:
   - keycloakclients
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - keycloak.infra.doodle.com
-  resources:
-  - keycloakclients/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - keycloak.infra.doodle.com
-  resources:
   - keycloakrealms
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - keycloak.infra.doodle.com
-  resources:
-  - keycloakrealms/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - keycloak.infra.doodle.com
-  resources:
   - keycloakusers
   verbs:
   - create
@@ -88,6 +40,8 @@ rules:
 - apiGroups:
   - keycloak.infra.doodle.com
   resources:
+  - keycloakclients/status
+  - keycloakrealms/status
   - keycloakusers/status
   verbs:
   - get

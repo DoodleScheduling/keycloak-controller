@@ -38,6 +38,7 @@ import (
 	ctrlcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -97,11 +98,6 @@ func main() {
 		leaderElectionId = leaderelection.GenerateID(leaderElectionId, watchOptions.LabelSelector)
 	}
 
-	watchNamespace := ""
-	if !watchOptions.AllNamespaces {
-		watchNamespace = os.Getenv("RUNTIME_NAMESPACE")
-	}
-
 	watchSelector, err := helper.GetWatchSelector(watchOptions)
 	if err != nil {
 		setupLog.Error(err, "unable to configure watch label selector for manager")
@@ -109,8 +105,10 @@ func main() {
 	}
 
 	opts := ctrl.Options{
-		Scheme:                        scheme,
-		MetricsBindAddress:            metricsAddr,
+		Scheme: scheme,
+		Metrics: server.Options{
+			BindAddress: metricsAddr,
+		},
 		HealthProbeBindAddress:        healthAddr,
 		LeaderElection:                leaderElectionOptions.Enable,
 		LeaderElectionReleaseOnCancel: leaderElectionOptions.ReleaseOnCancel,
@@ -118,7 +116,6 @@ func main() {
 		RenewDeadline:                 &leaderElectionOptions.RenewDeadline,
 		RetryPeriod:                   &leaderElectionOptions.RetryPeriod,
 		GracefulShutdownTimeout:       &gracefulShutdownTimeout,
-		Port:                          9443,
 		LeaderElectionID:              leaderElectionId,
 		Cache: ctrlcache.Options{
 			ByObject: map[ctrlclient.Object]ctrlcache.ByObject{
@@ -126,8 +123,12 @@ func main() {
 				&infrav1beta1.KeycloakClient{}: {Label: watchSelector},
 				&infrav1beta1.KeycloakUser{}:   {Label: watchSelector},
 			},
-			Namespaces: []string{watchNamespace},
 		},
+	}
+
+	if !watchOptions.AllNamespaces {
+		opts.Cache.DefaultNamespaces = make(map[string]ctrlcache.Config)
+		opts.Cache.DefaultNamespaces[os.Getenv("RUNTIME_NAMESPACE")] = ctrlcache.Config{}
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), opts)

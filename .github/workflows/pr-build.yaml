@@ -54,7 +54,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: 1.20.x
+          go-version: 1.22.x
       - name: fmt
         run: make fmt
       - name: vet
@@ -74,10 +74,10 @@ jobs:
     strategy:
       matrix:
         kubernetes-version:
-        - "1.25"
-        - "1.26"
         - "1.27"
         - "1.28"
+        - "1.29"
+        - "1.30"
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
@@ -88,7 +88,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: 1.20.x
+          go-version: 1.22.x
       - name: run test
         run: make test ENVTEST_K8S_VERSION=${{ matrix.kubernetes-version }}
 
@@ -106,7 +106,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          go-version: 1.20.x
+          go-version: 1.22.x
       - name: build
         run: make build
       - name: Check if working tree is dirty
@@ -148,10 +148,6 @@ jobs:
           egress-policy: audit
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - name: Setup Go
-        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
-        with:
-          go-version: 1.20.x
       - name: Setup Kubernetes
         uses: engineerd/setup-kind@aa272fe2a7309878ffc2a81c56cfe3ef108ae7d0 #v0.5.0
         with:
