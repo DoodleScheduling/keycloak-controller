@@ -22,7 +22,7 @@ jobs:
         with:
           egress-policy: audit
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Initialize CodeQL
         uses: github/codeql-action/init@3516b7f18a3633ddb8da415fdd9d845b7e1bcf5f #codeql-bundle-20221020
         with:
