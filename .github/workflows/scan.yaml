@@ -14,7 +14,6 @@ permissions:
 
 jobs:
   codeql:
-    name: CodeQL
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
