@@ -142,18 +142,8 @@ type KeycloakRealmStatus struct {
 	// ObservedGeneration is the last generation reconciled by the controller
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// ObservedSHA256 is a SHA256 hash over the realm and all sub resources
-	ObservedSHA256 string `json:"observedSHA256,omitempty"`
-
-	// LastExececutionOutput failed requests
-	// +optional
-	LastExececutionOutput string `json:"lastExececutionOutput,omitempty"`
-
 	// Reconciler is the reconciler pod while a reconciliation is in progress
 	Reconciler string `json:"reconciler,omitempty"`
-
-	// LastReconcileDuration is the total time the reconcile of the realm took
-	LastReconcileDuration metav1.Duration `json:"lastReconcileDuration,omitempty"`
 
 	// LastFailedRequests failed requests
 	// +optional

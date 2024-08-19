@@ -1313,7 +1313,6 @@ func (in *KeycloakRealmStatus) DeepCopyInto(out *KeycloakRealmStatus) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	out.LastReconcileDuration = in.LastReconcileDuration
 	if in.LastFailedRequests != nil {
 		in, out := &in.LastFailedRequests, &out.LastFailedRequests
 		*out = make([]RequestStatus, len(*in))
