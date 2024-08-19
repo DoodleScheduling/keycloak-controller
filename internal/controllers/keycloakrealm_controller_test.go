@@ -233,9 +233,10 @@ var _ = Describe("KeycloakRealm controller", func() {
 				ObservedGeneration: 1,
 				Conditions: []metav1.Condition{
 					{
-						Type:   v1beta1.ConditionReady,
-						Status: metav1.ConditionTrue,
-						Reason: "ReconciliationSucceeded",
+						Type:    v1beta1.ConditionReady,
+						Status:  metav1.ConditionTrue,
+						Reason:  "ReconciliationSucceeded",
+						Message: fmt.Sprintf("reconiler %s terminated with code 0", pod.Name),
 					},
 				},
 			}

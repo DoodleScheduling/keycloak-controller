@@ -211,7 +211,7 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	realm.Status.ObservedGeneration = realm.GetGeneration()
 
 	if err != nil {
-		logger.Error(err, "reconcile error occured")
+		logger.Error(err, "reconcile error occurred")
 		realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", err.Error())
 		r.Recorder.Event(&realm, "Normal", "error", err.Error())
 		result.Requeue = true
@@ -312,9 +312,9 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 
 	if needUpdate {
 		r.Log.Info("realm checksum changed, recreate reconciler")
-		if err := cleanup(); err != nil {
-			return realm, ctrl.Result{}, err
-		}
+		realm.Status.Reconciler = ""
+		realm.Status.LastFailedRequests = nil
+		return realm, ctrl.Result{Requeue: true}, cleanup()
 	}
 
 	if podErr == nil && pod.Name != "" {
@@ -328,24 +328,28 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 
 		switch {
 		case containerStatus == nil:
-			return realm, ctrl.Result{Requeue: true}, nil
+			return realm, ctrl.Result{}, nil
 		case containerStatus.State.Waiting != nil:
 			realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", containerStatus.State.Waiting.Message)
 		case containerStatus.State.Terminated != nil && containerStatus.State.Terminated.ExitCode == 0:
 			r.Log.Info("reconciler pod succeeded")
-			if err := cleanup(); err != nil {
+			/*if err := cleanup(); err != nil {
 				return realm, ctrl.Result{}, err
-			}
+			}*/
 
-			realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionTrue, "ReconciliationSucceeded", "")
+			realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionTrue, "ReconciliationSucceeded", fmt.Sprintf("reconciler %s terminated with code 0", realm.Status.Reconciler))
 			conditions.Delete(&realm, infrav1beta1.ConditionReconciling)
-			realm.Status.Reconciler = ""
-			realm.Status.LastFailedRequests = nil
+			//realm.Status.Reconciler = ""
+			//realm.Status.LastFailedRequests = nil
 
 			msg := "Realm successfully reconciled"
 			r.Recorder.Event(&realm, "Normal", "info", msg)
+			return realm, ctrl.Result{Requeue: true}, nil
+
 		case containerStatus.State.Terminated != nil:
-			realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", fmt.Sprintf("reconciler exit with code %d", containerStatus.State.Terminated.ExitCode))
+			realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", fmt.Sprintf("reconciler terminated with code %d", containerStatus.State.Terminated.ExitCode))
+			return realm, ctrl.Result{Requeue: true}, nil
+
 		case containerStatus.State.Running != nil && realm.Spec.Timeout != nil && time.Since(containerStatus.State.Running.StartedAt.Time) >= realm.Spec.Timeout.Duration:
 			if err := cleanup(); err != nil {
 				return realm, ctrl.Result{}, err
@@ -536,7 +540,7 @@ func (r *KeycloakRealmReconciler) podReconcile(ctx context.Context, realm infrav
 
 	r.Log.Info("create new reconciler pod", "pod", template.Name, "previous", realm.Status.Reconciler)
 
-	// If the status update fails the creation of the reconciler pod is postponed to the next reconcilation run
+	// If the status update fails the creation of the reconciler pod is postponed to the next reconciliation run
 	realm.Status.Reconciler = template.Name
 	realm.Status.LastFailedRequests = nil
 
@@ -581,7 +585,7 @@ func getSecret(ctx context.Context, c client.Client, realm infrav1beta1.Keycloak
 		return "", "", fmt.Errorf("referencing secret was not found: %w", err)
 	}
 
-	usr, pw, err := extractCredentials(realm.Spec.AuthSecret, secret, usernameField, passwordField)
+	usr, pw, err := extractCredentials(secret, usernameField, passwordField)
 	if err != nil {
 		return usr, pw, fmt.Errorf("credentials field not found in referenced authSecret: %w", err)
 	}
@@ -589,7 +593,7 @@ func getSecret(ctx context.Context, c client.Client, realm infrav1beta1.Keycloak
 	return usr, pw, err
 }
 
-func extractCredentials(credentials infrav1beta1.SecretReference, secret *corev1.Secret, usernameField, passwordField string) (string, string, error) {
+func extractCredentials(secret *corev1.Secret, usernameField, passwordField string) (string, string, error) {
 	var (
 		user string
 		pw   string
