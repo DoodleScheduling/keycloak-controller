@@ -47,7 +47,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 		interval = time.Millisecond * 50
 	)
 
-	When("reconciling a suspendended KeycloakRealm", func() {
+	When("reconciling a suspended KeycloakRealm", func() {
 		realmName := fmt.Sprintf("realm-%s", rand.String(5))
 
 		It("should not update the status", func() {
@@ -190,7 +190,6 @@ var _ = Describe("KeycloakRealm controller", func() {
 			Expect(pod.Spec.Containers[0].Image).Should(Equal("test:latest-22.0.1"))
 			Expect(pod.Spec.Containers[0].Env).Should(Equal(envs))
 			Expect(reconciledInstance.Status.SubResourceCatalog).Should(HaveLen(0))
-			Expect(reconciledInstance.Status.ObservedSHA256).Should(HaveLen(64))
 
 			By("validating the realm secret")
 			secret := corev1.Secret{}
@@ -233,9 +232,10 @@ var _ = Describe("KeycloakRealm controller", func() {
 				ObservedGeneration: 1,
 				Conditions: []metav1.Condition{
 					{
-						Type:   v1beta1.ConditionReady,
-						Status: metav1.ConditionTrue,
-						Reason: "ReconciliationSucceeded",
+						Type:    v1beta1.ConditionReady,
+						Status:  metav1.ConditionTrue,
+						Reason:  "ReconciliationSucceeded",
+						Message: fmt.Sprintf("reconciler %s terminated with code 0", pod.Name),
 					},
 				},
 			}
@@ -246,7 +246,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					return false
 				}
 
-				return needStatus(reconciledInstance, expectedStatus)
+				return needStatus(reconciledInstance, expectedStatus) && reconciledInstance.Status.Reconciler == ""
 			}, timeout, interval).Should(BeTrue())
 
 			By("making sure the reconciler pod is gone")
@@ -265,7 +265,6 @@ var _ = Describe("KeycloakRealm controller", func() {
 			}, secret)).Should(Not(BeNil()))
 		})
 	})
-
 	When("a realm with no version is reconciled", func() {
 		realmName := fmt.Sprintf("realm-%s", rand.String(5))
 
@@ -1028,7 +1027,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					return false
 				}
 
-				return needStatus(reconciledInstance, expectedStatus) && reconciledInstance.Status.Reconciler != beforeUpdateStatus.Reconciler
+				return needStatus(reconciledInstance, expectedStatus) && reconciledInstance.Status.Reconciler != beforeUpdateStatus.Reconciler && reconciledInstance.Status.Reconciler != ""
 			}, timeout, interval).Should(BeTrue())
 
 			By("making sure the resource catalog is correct")
@@ -1161,7 +1160,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					return false
 				}
 
-				return needStatus(reconciledInstance, expectedStatus) && reconciledInstance.Status.Reconciler != beforeUpdateStatus.Reconciler
+				return needStatus(reconciledInstance, expectedStatus) && reconciledInstance.Status.Reconciler != beforeUpdateStatus.Reconciler && reconciledInstance.Status.Reconciler != ""
 			}, timeout, interval).Should(BeTrue())
 
 			By("making sure the resource catalog is correct")
@@ -1295,7 +1294,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					return false
 				}
 
-				return needStatus(reconciledInstance, expectedStatus) && reconciledInstance.Status.Reconciler != beforeUpdateStatus.Reconciler
+				return needStatus(reconciledInstance, expectedStatus) && reconciledInstance.Status.Reconciler != beforeUpdateStatus.Reconciler && reconciledInstance.Status.Reconciler != ""
 			}, timeout, interval).Should(BeTrue())
 
 			By("making sure the resource catalog is correct")
@@ -1481,15 +1480,17 @@ var _ = Describe("KeycloakRealm controller", func() {
 					return false
 				}
 
-				return beforeChangeStatus.Reconciler != reconciledInstance.Status.Reconciler
+				return beforeChangeStatus.Reconciler != reconciledInstance.Status.Reconciler && reconciledInstance.Status.Reconciler != ""
 			}, timeout, interval).Should(BeTrue())
 
 			By("making sure there is a reconciler pod")
 			pod := &corev1.Pod{}
-			Expect(k8sClient.Get(ctx, types.NamespacedName{
-				Name:      reconciledInstance.Status.Reconciler,
-				Namespace: reconciledInstance.Namespace,
-			}, pod)).Should(Succeed())
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{
+					Name:      reconciledInstance.Status.Reconciler,
+					Namespace: reconciledInstance.Namespace,
+				}, pod)
+			}, timeout, interval).Should(BeNil())
 
 			Expect(pod.Spec.Containers[1].Image).Should(Equal("new-image:v1"))
 		})
@@ -1515,7 +1516,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					return false
 				}
 
-				return beforeChangeStatus.Reconciler != reconciledInstance.Status.Reconciler
+				return beforeChangeStatus.Reconciler != reconciledInstance.Status.Reconciler && reconciledInstance.Status.Reconciler != ""
 			}, timeout, interval).Should(BeTrue())
 		})
 	})
@@ -1676,7 +1677,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					return false
 				}
 
-				return needStatus(reconciledInstance, expectedStatus) && reconciledInstance.Status.Reconciler != beforeUpdateStatus.Reconciler
+				return needStatus(reconciledInstance, expectedStatus) && reconciledInstance.Status.Reconciler != beforeUpdateStatus.Reconciler && reconciledInstance.Status.Reconciler != ""
 			}, timeout, interval).Should(BeTrue())
 
 			By("making sure the resource catalog is correct")
@@ -1813,7 +1814,6 @@ var _ = Describe("KeycloakRealm controller", func() {
 
 					Eventually(func() bool {
 						err := k8sClient.Get(ctx, instanceLookupKey, reconciledInstance)
-						fmt.Printf("%#v\n\n", reconciledInstance.Status.Conditions)
 						if err != nil {
 							return false
 						}

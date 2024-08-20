@@ -9544,9 +9544,6 @@ spec:
                   - type
                   type: object
                 type: array
-              lastExececutionOutput:
-                description: LastExececutionOutput failed requests
-                type: string
               lastFailedRequests:
                 description: LastFailedRequests failed requests
                 items:
@@ -9569,19 +9566,11 @@ spec:
                       type: string
                   type: object
                 type: array
-              lastReconcileDuration:
-                description: LastReconcileDuration is the total time the reconcile
-                  of the realm took
-                type: string
               observedGeneration:
                 description: ObservedGeneration is the last generation reconciled
                   by the controller
                 format: int64
                 type: integer
-              observedSHA256:
-                description: ObservedSHA256 is a SHA256 hash over the realm and all
-                  sub resources
-                type: string
               reconciler:
                 description: Reconciler is the reconciler pod while a reconciliation
                   is in progress
