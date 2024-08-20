@@ -1,8 +1,7 @@
 ---
-name: Vulnerability report
-about: Create a security report to help us improve
-title: ''
-labels: vulnerability
-assignees: ''
-
+title: Vulnerabilities detected
+labels: security
 ---
+High or critical vulnerabilities detected. Scan results are below:
+
+{{ env.RESULTS }}
