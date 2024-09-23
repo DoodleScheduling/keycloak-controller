@@ -324,13 +324,13 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 	// cleanup reconciler pod if stale
 	if needUpdate {
 		logger.V(1).Info("realm checksum changed, delete stale reconciler", "pod-name", realm.Status.Reconciler)
-		return realm, ctrl.Result{}, cleanup()
+		return realm, ctrl.Result{Requeue: true}, cleanup()
 	}
 
 	// garbage collect reconciler pod
-	if progressingCondition != nil && readyCondition != nil && readyCondition.Status != metav1.ConditionUnknown && podErr == nil && realm.Status.Reconciler != "" {
+	if progressingCondition != nil && readyCondition != nil && readyCondition.Status == metav1.ConditionTrue && podErr == nil && realm.Status.Reconciler != "" {
 		logger.V(1).Info("garbage collect reconciler pod", "pod-name", realm.Status.Reconciler)
-		return realm, ctrl.Result{}, cleanup()
+		return realm, ctrl.Result{Requeue: true}, cleanup()
 	}
 
 	// rate limiter
@@ -374,12 +374,9 @@ func (r *KeycloakRealmReconciler) handlerReconcilerState(realm infrav1beta1.Keyc
 		return realm, ctrl.Result{Requeue: true}, nil
 
 	case containerStatus.State.Terminated != nil:
-		realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", fmt.Sprintf("reconciler terminated with code %d", containerStatus.State.Terminated.ExitCode))
-		return realm, ctrl.Result{Requeue: true}, nil
-
-	case containerStatus.State.Running != nil && realm.Spec.Timeout != nil && time.Since(containerStatus.State.Running.StartedAt.Time) >= realm.Spec.Timeout.Duration:
-		conditions.Delete(&realm, infrav1beta1.ConditionReconciling)
-		return realm, reconcile.Result{}, errors.New("reconciler timeout reached")
+		err := fmt.Errorf("reconciler terminated with code %d", containerStatus.State.Terminated.ExitCode)
+		realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", err.Error())
+		return realm, ctrl.Result{}, nil
 	}
 
 	return realm, ctrl.Result{}, nil
@@ -522,7 +519,7 @@ func (r *KeycloakRealmReconciler) createReconciler(ctx context.Context, realm in
 		return realm, ctrl.Result{}, err
 	}
 
-	template.Spec.RestartPolicy = corev1.RestartPolicyNever
+	template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
 	template.Spec.Containers = containers
 	template.Spec.Volumes = append(template.Spec.Volumes, corev1.Volume{
 		Name: "realm",
@@ -798,8 +795,6 @@ func (r *KeycloakRealmReconciler) patchStatus(ctx context.Context, realm *infrav
 	if err := r.Client.Get(ctx, key, latest); err != nil {
 		return err
 	}
-
-	//	logger.V(1).Info("update .status", "new", realm.Status, "current", latest.Status)
 
 	return r.Client.Status().Patch(ctx, realm, client.MergeFrom(latest))
 }

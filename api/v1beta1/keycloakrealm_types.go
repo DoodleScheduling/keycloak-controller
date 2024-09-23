@@ -64,6 +64,7 @@ type KeycloakRealmSpec struct {
 
 	// Timeout
 	// +optional
+	// +deprecated
 	Timeout *metav1.Duration `json:"timeout,omitempty"`
 
 	// Suspend reconciliation

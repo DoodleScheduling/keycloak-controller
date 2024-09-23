@@ -46,7 +46,6 @@ spec:
   authSecret:
     name: keycloak-admin
   interval: 1h
-  timeout: 5m0s
   realm:
     accessCodeLifespan: 60
     accessCodeLifespanLogin: 1800
@@ -170,7 +169,6 @@ spec:
     passwordField: password
     userField: username
   interval: 1h
-  timeout: 5m0s
   suspend: false
   realm:
     accessCodeLifespan: 60
@@ -211,7 +209,6 @@ spec:
   authSecret:
     name: keycloak-admin
   interval: 1h
-  timeout: 5m0s
   realm:
     accessCodeLifespan: 60
     accessCodeLifespanLogin: 1800
@@ -268,7 +265,6 @@ spec:
   authSecret:
     name: keycloak-admin
   interval: 1h
-  timeout: 5m0s
   realm:
     accessCodeLifespan: 60
     accessCodeLifespanLogin: 1800
