@@ -62,10 +62,6 @@ type KeycloakRealmSpec struct {
 	// +optional
 	Interval *metav1.Duration `json:"interval,omitempty"`
 
-	// Timeout
-	// +optional
-	Timeout *metav1.Duration `json:"timeout,omitempty"`
-
 	// Suspend reconciliation
 	// +optional
 	Suspend bool `json:"suspend,omitempty"`
