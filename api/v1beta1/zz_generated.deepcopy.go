@@ -1275,6 +1275,11 @@ func (in *KeycloakRealmSpec) DeepCopyInto(out *KeycloakRealmSpec) {
 		*out = new(v1.Duration)
 		**out = **in
 	}
+	if in.Timeout != nil {
+		in, out := &in.Timeout, &out.Timeout
+		*out = new(v1.Duration)
+		**out = **in
+	}
 	if in.ReconcilerTemplate != nil {
 		in, out := &in.ReconcilerTemplate, &out.ReconcilerTemplate
 		*out = new(ReconcilerTemplate)

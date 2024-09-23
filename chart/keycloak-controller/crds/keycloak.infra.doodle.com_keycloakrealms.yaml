@@ -9475,6 +9475,9 @@ spec:
               suspend:
                 description: Suspend reconciliation
                 type: boolean
+              timeout:
+                description: Timeout
+                type: string
               version:
                 description: Version is the keycloak version
                 type: string
