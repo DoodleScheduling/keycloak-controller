@@ -125,7 +125,7 @@ jobs:
         run: |
           docker save --output keycloak-controller-container.tar keycloak-controller:latest
       - name: Upload image
-        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
+        uses: actions/upload-artifact@84480863f228bb9747b473957fcc9e309aa96097 # v4.4.2
         with:
           name: keycloak-controller-container
           path: keycloak-controller-container.tar        
