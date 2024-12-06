@@ -143,6 +143,9 @@ type KeycloakRealmStatus struct {
 	// ObservedGeneration is the last generation reconciled by the controller
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
+	// ObservedSHA256 is the last realm checksum reconciled by the controller
+	ObservedSHA256 string `json:"observedSHA256,omitempty"`
+
 	// Reconciler is the reconciler pod while a reconciliation is in progress
 	Reconciler string `json:"reconciler,omitempty"`
 
