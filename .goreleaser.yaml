@@ -18,11 +18,11 @@ builds:
 archives:
 - id: manager
   name_template: "manager_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-  builds:
+  ids:
   - manager
 - id: proxy
   name_template: "proxy_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-  builds:
+  ids:
   - proxy
 
 checksum:
