@@ -73,5 +73,5 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	res.Body.Close()
+	_ = res.Body.Close()
 }
