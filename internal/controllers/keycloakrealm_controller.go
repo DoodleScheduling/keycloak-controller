@@ -710,6 +710,10 @@ func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, re
 			realm.Spec.Realm.Roles = &infrav1beta1.RolesRepresentation{}
 		}
 
+		if realm.Spec.Realm.Roles.Client == nil {
+			realm.Spec.Realm.Roles.Client = make(map[string]infrav1beta1.RoleRepresentationArray)
+		}
+
 		if len(client.Spec.Client.Roles) > 0 {
 			realm.Spec.Realm.Roles.Client[client.Spec.Client.ClientID] = append(realm.Spec.Realm.Roles.Client[client.Spec.Client.ClientID], client.Spec.Client.Roles...)
 			client.Spec.Client.Roles = nil
