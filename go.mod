@@ -3,7 +3,7 @@ module github.com/DoodleScheduling/keycloak-controller
 go 1.22.0
 
 require (
-	github.com/fluxcd/pkg/runtime v0.49.1
+	github.com/fluxcd/pkg/runtime v0.58.0
 	github.com/go-logr/logr v1.4.2
 	github.com/kylelemons/godebug v1.1.0
 	github.com/onsi/ginkgo/v2 v2.22.2
