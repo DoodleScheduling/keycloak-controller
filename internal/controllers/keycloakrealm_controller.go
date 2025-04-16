@@ -634,8 +634,8 @@ func (r *KeycloakRealmReconciler) getKeycloakVersion(ctx context.Context, realm 
 	}
 
 	defer func() {
-    _ = resp.Body.Close()
-  }()
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 400 || resp.StatusCode == 0 {
 		return "", fmt.Errorf("keycloak token request failed with status %d: %s", resp.StatusCode, string(b))
@@ -673,8 +673,8 @@ func (r *KeycloakRealmReconciler) getKeycloakVersion(ctx context.Context, realm 
 	}
 
 	defer func() {
-    _ = resp.Body.Close()
-  }()
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 400 || resp.StatusCode == 0 {
 		return "", fmt.Errorf("keycloak serverinfo request failed with status %d: %s", resp.StatusCode, string(b))
