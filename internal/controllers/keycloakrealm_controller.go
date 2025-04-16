@@ -191,7 +191,7 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Fetch the KeycloakRealm instance
 	realm := infrav1beta1.KeycloakRealm{}
 
-	err := r.Client.Get(ctx, req.NamespacedName, &realm)
+	err := r.Get(ctx, req.NamespacedName, &realm)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -263,13 +263,13 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 
 	cleanup := func() error {
 		if secretErr == nil {
-			if err := r.Client.Delete(ctx, secret); err != nil && !apierrors.IsNotFound(err) {
+			if err := r.Delete(ctx, secret); err != nil && !apierrors.IsNotFound(err) {
 				return fmt.Errorf("could not delete realm secret: %w", err)
 			}
 		}
 
 		if podErr == nil {
-			if err := r.Client.Delete(ctx, pod); err != nil && !apierrors.IsNotFound(err) {
+			if err := r.Delete(ctx, pod); err != nil && !apierrors.IsNotFound(err) {
 				return fmt.Errorf("could not delete reconciler pod: %w", err)
 			}
 		}
@@ -279,8 +279,8 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 
 	// check for stale reconciler
 	if realm.Status.Reconciler != "" {
-		secretErr = r.Client.Get(ctx, client.ObjectKey{Name: realm.Status.Reconciler, Namespace: realm.Namespace}, secret)
-		podErr = r.Client.Get(ctx, client.ObjectKey{Name: realm.Status.Reconciler, Namespace: realm.Namespace}, pod)
+		secretErr = r.Get(ctx, client.ObjectKey{Name: realm.Status.Reconciler, Namespace: realm.Namespace}, secret)
+		podErr = r.Get(ctx, client.ObjectKey{Name: realm.Status.Reconciler, Namespace: realm.Namespace}, pod)
 
 		if current, ok := secret.Data["realm.json"]; ok {
 			needUpdate = raw != string(current)
@@ -417,8 +417,8 @@ func (r *KeycloakRealmReconciler) createReconciler(ctx context.Context, realm in
 	template := &corev1.Pod{}
 
 	if realm.Spec.ReconcilerTemplate != nil {
-		template.ObjectMeta.Labels = realm.Spec.ReconcilerTemplate.Labels
-		template.ObjectMeta.Annotations = realm.Spec.ReconcilerTemplate.Annotations
+		template.Labels = realm.Spec.ReconcilerTemplate.Labels
+		template.Annotations = realm.Spec.ReconcilerTemplate.Annotations
 		realm.Spec.ReconcilerTemplate.Spec.DeepCopyInto(&template.Spec)
 	}
 
@@ -428,13 +428,13 @@ func (r *KeycloakRealmReconciler) createReconciler(ctx context.Context, realm in
 	template.ResourceVersion = ""
 	template.UID = ""
 
-	if template.ObjectMeta.Labels == nil {
-		template.ObjectMeta.Labels = make(map[string]string)
+	if template.Labels == nil {
+		template.Labels = make(map[string]string)
 	}
 
-	template.ObjectMeta.Labels["app.kubernetes.io/instance"] = "realm-reconciler"
-	template.ObjectMeta.Labels["app.kubernetes.io/name"] = "keycloak-controller"
-	template.ObjectMeta.Labels["keycloak-controller/realm"] = realm.Name
+	template.Labels["app.kubernetes.io/instance"] = "realm-reconciler"
+	template.Labels["app.kubernetes.io/name"] = "keycloak-controller"
+	template.Labels["keycloak-controller/realm"] = realm.Name
 
 	if template.Annotations == nil {
 		template.Annotations = make(map[string]string)
@@ -541,12 +541,12 @@ func (r *KeycloakRealmReconciler) createReconciler(ctx context.Context, realm in
 	}
 
 	logger.Info("creating new realm secret", "secret", secret.Name)
-	if err := r.Client.Create(ctx, secret); err != nil {
+	if err := r.Create(ctx, secret); err != nil {
 		return realm, ctrl.Result{}, err
 	}
 
 	logger.Info("create new reconciler pod", "pod", template.Name, "previous", realm.Status.Reconciler)
-	if err := r.Client.Create(ctx, template); err != nil {
+	if err := r.Create(ctx, template); err != nil {
 		return realm, ctrl.Result{}, err
 	}
 
@@ -633,7 +633,9 @@ func (r *KeycloakRealmReconciler) getKeycloakVersion(ctx context.Context, realm 
 		return "", fmt.Errorf("keycloak token read body failed: %w", err)
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+    _ = resp.Body.Close()
+  }()
 
 	if resp.StatusCode >= 400 || resp.StatusCode == 0 {
 		return "", fmt.Errorf("keycloak token request failed with status %d: %s", resp.StatusCode, string(b))
@@ -670,7 +672,9 @@ func (r *KeycloakRealmReconciler) getKeycloakVersion(ctx context.Context, realm 
 		return "", fmt.Errorf("keycloak serverinfo read body failed: %w", err)
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+    _ = resp.Body.Close()
+  }()
 
 	if resp.StatusCode >= 400 || resp.StatusCode == 0 {
 		return "", fmt.Errorf("keycloak serverinfo request failed with status %d: %s", resp.StatusCode, string(b))
@@ -690,7 +694,7 @@ func (r *KeycloakRealmReconciler) extendRealmWithClients(ctx context.Context, re
 		return realm, err
 	}
 
-	err = r.Client.List(ctx, &clients, client.InNamespace(realm.Namespace), client.MatchingLabelsSelector{Selector: selector})
+	err = r.List(ctx, &clients, client.InNamespace(realm.Namespace), client.MatchingLabelsSelector{Selector: selector})
 	if err != nil {
 		return realm, err
 	}
@@ -726,7 +730,7 @@ func (r *KeycloakRealmReconciler) extendRealmWithUsers(ctx context.Context, real
 		return realm, err
 	}
 
-	err = r.Client.List(ctx, &users, client.InNamespace(realm.Namespace), client.MatchingLabelsSelector{Selector: selector})
+	err = r.List(ctx, &users, client.InNamespace(realm.Namespace), client.MatchingLabelsSelector{Selector: selector})
 	if err != nil {
 		return realm, err
 	}
@@ -769,7 +773,7 @@ func (r *KeycloakRealmReconciler) substituteSecrets(ctx context.Context, realm i
 			Namespace: realm.Namespace,
 			Name:      parts[1],
 		}
-		err := r.Client.Get(ctx, secretName, secret)
+		err := r.Get(ctx, secretName, secret)
 
 		if err != nil {
 			errors = append(errors, fmt.Errorf("referencing secret was not found: %w", err))
@@ -794,11 +798,11 @@ func (r *KeycloakRealmReconciler) substituteSecrets(ctx context.Context, realm i
 func (r *KeycloakRealmReconciler) patchStatus(ctx context.Context, realm *infrav1beta1.KeycloakRealm, logger logr.Logger) error {
 	key := client.ObjectKeyFromObject(realm)
 	latest := &infrav1beta1.KeycloakRealm{}
-	if err := r.Client.Get(ctx, key, latest); err != nil {
+	if err := r.Get(ctx, key, latest); err != nil {
 		return err
 	}
 
-	return r.Client.Status().Patch(ctx, realm, client.MergeFrom(latest))
+	return r.Status().Patch(ctx, realm, client.MergeFrom(latest))
 }
 
 // objectKey returns client.ObjectKey for the object.
