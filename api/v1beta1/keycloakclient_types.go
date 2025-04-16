@@ -182,6 +182,8 @@ type KeycloakAPIClient struct {
 	// +optional
 	AuthenticationFlowBindingOverrides map[string]string `json:"authenticationFlowBindingOverrides,omitempty"`
 	AlwaysDisplayInConsole             *bool             `json:"alwaysDisplayInConsole,omitempty"`
+
+	Roles RoleRepresentationArray `json:"roles,omitempty"`
 }
 
 type KeycloakProtocolMapper struct {
