@@ -806,6 +806,55 @@ spec:
                           items:
                             type: string
                           type: array
+                        roles:
+                          items:
+                            description: https://www.keycloak.org/docs-api/11.0/rest-api/index.html#_rolerepresentation
+                            properties:
+                              attributes:
+                                additionalProperties:
+                                  items:
+                                    type: string
+                                  type: array
+                                description: Role Attributes
+                                type: object
+                              clientRole:
+                                description: Client Role
+                                type: boolean
+                              composite:
+                                description: Composite
+                                type: boolean
+                              composites:
+                                description: Composites
+                                properties:
+                                  client:
+                                    additionalProperties:
+                                      items:
+                                        type: string
+                                      type: array
+                                    description: Map client => []role
+                                    type: object
+                                  realm:
+                                    description: Realm roles
+                                    items:
+                                      type: string
+                                    type: array
+                                type: object
+                              containerId:
+                                description: Container Id
+                                type: string
+                              description:
+                                description: Description
+                                type: string
+                              id:
+                                description: Id
+                                type: string
+                              name:
+                                description: Name
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          type: array
                         rootUrl:
                           description: Application root URL.
                           type: string
