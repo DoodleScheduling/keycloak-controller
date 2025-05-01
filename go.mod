@@ -3,7 +3,7 @@ module github.com/DoodleScheduling/keycloak-controller
 go 1.24.2
 
 require (
-	github.com/fluxcd/pkg/runtime v0.58.0
+	github.com/fluxcd/pkg/runtime v0.59.0
 	github.com/go-logr/logr v1.4.2
 	github.com/kylelemons/godebug v1.1.0
 	github.com/onsi/ginkgo/v2 v2.23.4
@@ -37,8 +37,8 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fluxcd/cli-utils v0.36.0-flux.12 // indirect
-	github.com/fluxcd/pkg/apis/meta v1.10.0 // indirect
+	github.com/fluxcd/cli-utils v0.36.0-flux.13 // indirect
+	github.com/fluxcd/pkg/apis/meta v1.11.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
 	github.com/go-errors/errors v1.5.1 // indirect
@@ -105,11 +105,11 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/cli-runtime v0.32.3 // indirect
+	k8s.io/cli-runtime v0.33.0 // indirect
 	k8s.io/component-base v0.33.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
-	k8s.io/kubectl v0.32.3 // indirect
+	k8s.io/kubectl v0.33.0 // indirect
 	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/kustomize/api v0.19.0 // indirect
