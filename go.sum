@@ -35,10 +35,10 @@ github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/fluxcd/cli-utils v0.36.0-flux.13 h1:2X5yjz/rk9mg7+bMFBDZKGKzeZpAmY2s6iwbNZz7OzM=
 github.com/fluxcd/cli-utils v0.36.0-flux.13/go.mod h1:b2iSoIeDTtjfCB0IKtGgqlhhvWa1oux3e90CjOf81oA=
-github.com/fluxcd/pkg/apis/meta v1.11.0 h1:h8q95k6ZEK1HCfsLkt8Np3i6ktb6ZzcWJ6hg++oc9w0=
-github.com/fluxcd/pkg/apis/meta v1.11.0/go.mod h1:+son1Va60x2eiDcTwd7lcctbI6C+K3gM7R+ULmEq1SI=
-github.com/fluxcd/pkg/runtime v0.59.0 h1:3OrFkMJB39NcQ2vhhoxqls59sQVSn8U+thhyLbsQoA4=
-github.com/fluxcd/pkg/runtime v0.59.0/go.mod h1:MFbfyNyyoYRgPxpdwC9/dCOkzo7Yxhu/cQ9NKyhvqc0=
+github.com/fluxcd/pkg/apis/meta v1.12.0 h1:XW15TKZieC2b7MN8VS85stqZJOx+/b8jATQ/xTUhVYg=
+github.com/fluxcd/pkg/apis/meta v1.12.0/go.mod h1:+son1Va60x2eiDcTwd7lcctbI6C+K3gM7R+ULmEq1SI=
+github.com/fluxcd/pkg/runtime v0.60.0 h1:d++EkV3FlycB+bzakB5NumwY4J8xts8i7lbvD6jBLeU=
+github.com/fluxcd/pkg/runtime v0.60.0/go.mod h1:UeU0/eZLErYC/1bTmgzBfNXhiHy9fuQzjfLK0HxRgxY=
 github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
 github.com/fsnotify/fsnotify v1.9.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
 github.com/fxamacker/cbor/v2 v2.8.0 h1:fFtUGXUzXPHTIUdne5+zzMPTfffl3RD5qYnkY40vtxU=
