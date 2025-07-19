@@ -3,7 +3,7 @@ module github.com/DoodleScheduling/keycloak-controller
 go 1.24.2
 
 require (
-	github.com/fluxcd/pkg/runtime v0.67.0
+	github.com/fluxcd/pkg/runtime v0.72.0
 	github.com/go-logr/logr v1.4.3
 	github.com/kylelemons/godebug v1.1.0
 	github.com/onsi/ginkgo/v2 v2.23.4
@@ -39,7 +39,7 @@ require (
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fluxcd/cli-utils v0.36.0-flux.14 // indirect
-	github.com/fluxcd/pkg/apis/meta v1.15.0 // indirect
+	github.com/fluxcd/pkg/apis/meta v1.18.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
 	github.com/go-errors/errors v1.5.1 // indirect
