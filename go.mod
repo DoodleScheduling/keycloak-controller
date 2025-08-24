@@ -9,7 +9,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.25.0
 	github.com/onsi/gomega v1.38.0
 	github.com/spf13/pflag v1.0.7
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	github.com/tj/assert v0.0.3
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0
 	go.opentelemetry.io/otel v1.37.0
