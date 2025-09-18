@@ -125,7 +125,7 @@ prometheusRule:
 
 kubeRBACProxy:
   enabled: true
-  image: quay.io/brancz/kube-rbac-proxy:v0.19.1
+  image: quay.io/brancz/kube-rbac-proxy:v0.20.0
   securityContext:
     allowPrivilegeEscalation: false
     capabilities:
