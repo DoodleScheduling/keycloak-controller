@@ -466,11 +466,14 @@ type KeycloakAPIRealm struct {
 	WebAuthnPolicyAuthenticatorAttachment                     string   `json:"webAuthnPolicyAuthenticatorAttachment,omitempty"`
 	WebAuthnPolicyAvoidSameAuthenticatorRegister              *bool    `json:"webAuthnPolicyAvoidSameAuthenticatorRegister,omitempty"`
 	WebAuthnPolicyCreateTimeout                               int32    `json:"webAuthnPolicyCreateTimeout,omitempty"`
+	WebAuthnPolicyExtraOrigins                                []string `json:"webAuthnPolicyExtraOrigins,omitempty"`
 	WebAuthnPolicyPasswordlessAcceptableAaguids               []string `json:"webAuthnPolicyPasswordlessAcceptableAaguids,omitempty"`
 	WebAuthnPolicyPasswordlessAttestationConveyancePreference string   `json:"webAuthnPolicyPasswordlessAttestationConveyancePreference,omitempty"`
 	WebAuthnPolicyPasswordlessAuthenticatorAttachment         string   `json:"webAuthnPolicyPasswordlessAuthenticatorAttachment,omitempty"`
 	WebAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister  *bool    `json:"webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister,omitempty"`
 	WebAuthnPolicyPasswordlessCreateTimeout                   int32    `json:"webAuthnPolicyPasswordlessCreateTimeout,omitempty"`
+	WebAuthnPolicyPasswordlessExtraOrigins                    []string `json:"webAuthnPolicyPasswordlessExtraOrigins,omitempty"`
+	WebAuthnPolicyPasswordlessPasskeysEnabled                 *bool    `json:"webAuthnPolicyPasswordlessPasskeysEnabled,omitempty"`
 	WebAuthnPolicyPasswordlessRequireResidentKey              string   `json:"webAuthnPolicyPasswordlessRequireResidentKey,omitempty"`
 	WebAuthnPolicyPasswordlessRpEntityName                    string   `json:"webAuthnPolicyPasswordlessRpEntityName,omitempty"`
 	WebAuthnPolicyPasswordlessRpId                            string   `json:"webAuthnPolicyPasswordlessRpId,omitempty"`

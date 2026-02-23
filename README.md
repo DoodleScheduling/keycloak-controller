@@ -73,11 +73,14 @@ spec:
     webAuthnPolicyAuthenticatorAttachment: not specified
     webAuthnPolicyAvoidSameAuthenticatorRegister: false
     webAuthnPolicyCreateTimeout: 0
+    webAuthnPolicyExtraOrigins: []
     webAuthnPolicyPasswordlessAcceptableAaguids: []
     webAuthnPolicyPasswordlessAttestationConveyancePreference: not specified
     webAuthnPolicyPasswordlessAuthenticatorAttachment: not specified
     webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister: false
     webAuthnPolicyPasswordlessCreateTimeout: 0
+    webAuthnPolicyPasswordlessExtraOrigins: []
+    webAuthnPolicyPasswordlessPasskeysEnabled: false
     webAuthnPolicyPasswordlessRequireResidentKey: not specified
     webAuthnPolicyPasswordlessRpId: ""
     webAuthnPolicyPasswordlessSignatureAlgorithms:

@@ -754,6 +754,11 @@ func (in *KeycloakAPIRealm) DeepCopyInto(out *KeycloakAPIRealm) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.WebAuthnPolicyExtraOrigins != nil {
+		in, out := &in.WebAuthnPolicyExtraOrigins, &out.WebAuthnPolicyExtraOrigins
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.WebAuthnPolicyPasswordlessAcceptableAaguids != nil {
 		in, out := &in.WebAuthnPolicyPasswordlessAcceptableAaguids, &out.WebAuthnPolicyPasswordlessAcceptableAaguids
 		*out = make([]string, len(*in))
@@ -761,6 +766,16 @@ func (in *KeycloakAPIRealm) DeepCopyInto(out *KeycloakAPIRealm) {
 	}
 	if in.WebAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister != nil {
 		in, out := &in.WebAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister, &out.WebAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister
+		*out = new(bool)
+		**out = **in
+	}
+	if in.WebAuthnPolicyPasswordlessExtraOrigins != nil {
+		in, out := &in.WebAuthnPolicyPasswordlessExtraOrigins, &out.WebAuthnPolicyPasswordlessExtraOrigins
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.WebAuthnPolicyPasswordlessPasskeysEnabled != nil {
+		in, out := &in.WebAuthnPolicyPasswordlessPasskeysEnabled, &out.WebAuthnPolicyPasswordlessPasskeysEnabled
 		*out = new(bool)
 		**out = **in
 	}

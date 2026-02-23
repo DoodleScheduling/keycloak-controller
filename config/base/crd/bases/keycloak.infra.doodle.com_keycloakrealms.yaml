@@ -1521,6 +1521,10 @@ spec:
                   webAuthnPolicyCreateTimeout:
                     format: int32
                     type: integer
+                  webAuthnPolicyExtraOrigins:
+                    items:
+                      type: string
+                    type: array
                   webAuthnPolicyPasswordlessAcceptableAaguids:
                     items:
                       type: string
@@ -1534,6 +1538,12 @@ spec:
                   webAuthnPolicyPasswordlessCreateTimeout:
                     format: int32
                     type: integer
+                  webAuthnPolicyPasswordlessExtraOrigins:
+                    items:
+                      type: string
+                    type: array
+                  webAuthnPolicyPasswordlessPasskeysEnabled:
+                    type: boolean
                   webAuthnPolicyPasswordlessRequireResidentKey:
                     type: string
                   webAuthnPolicyPasswordlessRpEntityName:
