@@ -334,7 +334,7 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 	}
 
 	// rate limiter
-	if readyCondition != nil && readyCondition.Status == metav1.ConditionTrue && (realm.Spec.Interval == nil || time.Since(readyCondition.LastTransitionTime.Time) < realm.Spec.Interval.Duration) && checksum == realm.Status.ObservedSHA256 {
+	if readyCondition != nil && readyCondition.Status == metav1.ConditionTrue && (realm.Spec.Interval == nil || time.Since(readyCondition.LastTransitionTime.Time) < realm.Spec.Interval.Duration && checksum == realm.Status.ObservedSHA256 && realm.Generation == realm.Status.ObservedGeneration) {
 		logger.V(1).Info("skip reconciliation, last transition time too recent")
 
 		if realm.Spec.Interval != nil {
@@ -454,7 +454,7 @@ func (r *KeycloakRealmReconciler) createReconciler(ctx context.Context, realm in
 		passwordField = realm.Spec.AuthSecret.PasswordField
 	}
 
-	tag := fmt.Sprintf("latest-%s", realm.Spec.Version)
+	var tag string
 	username, password, err := getSecret(ctx, r.Client, realm, usernameField, passwordField)
 	if err != nil {
 		return realm, ctrl.Result{}, err
@@ -466,8 +466,10 @@ func (r *KeycloakRealmReconciler) createReconciler(ctx context.Context, realm in
 			return realm, reconcile.Result{}, err
 		}
 
-		logger.Info("keycloak version detected", "version", version)
-		tag = fmt.Sprintf("latest-%s", version)
+		tag = fmt.Sprintf("latest-%s", getMajor(version))
+		logger.Info("keycloak version detected", "version", version, "tag", tag)
+	} else {
+		tag = realm.Spec.Version
 	}
 
 	containers := []corev1.Container{
@@ -489,6 +491,10 @@ func (r *KeycloakRealmReconciler) createReconciler(ctx context.Context, realm in
 				{
 					Name:  "IMPORT_FILES_LOCATIONS",
 					Value: "/realm/realm.json",
+				},
+				{
+					Name:  "IMPORT_CACHE_ENABLED",
+					Value: "false",
 				},
 				{
 					Name: "KEYCLOAK_USER",
@@ -557,6 +563,15 @@ func (r *KeycloakRealmReconciler) createReconciler(ctx context.Context, realm in
 	}
 
 	return realm, ctrl.Result{}, err
+}
+
+func getMajor(version string) string {
+	version = strings.TrimPrefix(version, "v")
+	parts := strings.Split(version, ".")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return ""
 }
 
 func getSecret(ctx context.Context, c client.Client, realm infrav1beta1.KeycloakRealm, usernameField, passwordField string) (string, string, error) {
