@@ -107,7 +107,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					Namespace: "default",
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
-					Version: "22.0.1",
+					Version: "latest-22",
 					Address: "http://my-keycloak",
 					AuthSecret: v1beta1.SecretReference{
 						Name: authSecret.Name,
@@ -191,7 +191,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 				},
 			}
 
-			Expect(pod.Spec.Containers[0].Image).Should(Equal("test:latest-22.0.1"))
+			Expect(pod.Spec.Containers[0].Image).Should(Equal("test:latest-22"))
 			Expect(pod.Spec.Containers[0].Env).Should(Equal(envs))
 			Expect(reconciledInstance.Status.SubResourceCatalog).Should(HaveLen(0))
 
@@ -378,7 +378,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 				},
 			}
 
-			Expect(pod.Spec.Containers[0].Image).Should(Equal("test:latest-22.0.1"))
+			Expect(pod.Spec.Containers[0].Image).Should(Equal("test:latest-22"))
 			Expect(pod.Spec.Containers[0].Env).Should(Equal(envs))
 			Expect(reconciledInstance.Status.SubResourceCatalog).Should(HaveLen(0))
 		})
@@ -430,7 +430,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					Namespace: "default",
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
-					Version: "22.0.1",
+					Version: "latest-22",
 					Address: "http://my-keycloak",
 					AuthSecret: v1beta1.SecretReference{
 						Name: authSecret.Name,
@@ -545,7 +545,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					Namespace: "default",
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
-					Version: "22.0.1",
+					Version: "latest-22",
 					Address: "http://my-keycloak",
 
 					AuthSecret: v1beta1.SecretReference{
@@ -642,7 +642,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					Namespace: "default",
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
-					Version: "22.0.1",
+					Version: "latest-22",
 					Address: "http://my-keycloak",
 					AuthSecret: v1beta1.SecretReference{
 						Name: authSecret.Name,
@@ -736,7 +736,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					Namespace: "default",
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
-					Version: "22.0.1",
+					Version: "latest-22",
 					Address: "http://my-keycloak",
 					AuthSecret: v1beta1.SecretReference{
 						Name:          authSecret.Name,
@@ -851,7 +851,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					Namespace: "default",
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
-					Version: "22.0.1",
+					Version: "latest-22",
 					Address: "http://my-keycloak",
 					AuthSecret: v1beta1.SecretReference{
 						Name: authSecret.Name,
@@ -975,7 +975,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					Namespace: "default",
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
-					Version: "22.0.1",
+					Version: "latest-22",
 					Address: "http://my-keycloak",
 					AuthSecret: v1beta1.SecretReference{
 						Name: authSecret.Name,
@@ -1105,7 +1105,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					Namespace: "default",
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
-					Version: "22.0.1",
+					Version: "latest-22",
 					Address: "http://my-keycloak",
 					AuthSecret: v1beta1.SecretReference{
 						Name: authSecret.Name,
@@ -1238,7 +1238,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					Namespace: "default",
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
-					Version: "22.0.1",
+					Version: "latest-22",
 					Address: "http://my-keycloak",
 					AuthSecret: v1beta1.SecretReference{
 						Name: authSecret.Name,
@@ -1359,7 +1359,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					Namespace: "default",
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
-					Version: "22.0.1",
+					Version: "latest-22",
 					Address: "http://my-keycloak",
 					ReconcilerTemplate: &v1beta1.ReconcilerTemplate{
 						ObjectMetadata: v1beta1.ObjectMetadata{
@@ -1550,7 +1550,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 					Namespace: "default",
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
-					Version: "22.0.1",
+					Version: "latest-22",
 					Address: "http://my-keycloak",
 					AuthSecret: v1beta1.SecretReference{
 						Name: "does-not-exists",
@@ -1626,7 +1626,7 @@ var _ = Describe("KeycloakRealm controller", func() {
 				},
 				Spec: v1beta1.KeycloakRealmSpec{
 					Interval: &metav1.Duration{Duration: time.Second * 100},
-					Version:  "22.0.1",
+					Version:  "latest-22",
 					Address:  "http://my-keycloak",
 					AuthSecret: v1beta1.SecretReference{
 						Name: authSecret.Name,
