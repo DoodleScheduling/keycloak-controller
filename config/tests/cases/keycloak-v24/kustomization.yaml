@@ -36,12 +36,3 @@ images:
 - name: ghcr.io/doodlescheduling/keycloak-controller
   newTag: latest
   newName: keycloak-controller
-
-patchesStrategicMerge:
-- | 
-  apiVersion: keycloak.infra.doodle.com/v1beta1
-  kind: KeycloakRealm
-  metadata:
-    name: test
-  spec:
-    version: 24.0.1

@@ -44,5 +44,5 @@ patchesStrategicMerge:
   metadata:
     name: test
   spec:
-    version: 20.0.1
+    version: latest-20
    

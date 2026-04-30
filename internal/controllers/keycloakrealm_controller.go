@@ -454,7 +454,7 @@ func (r *KeycloakRealmReconciler) createReconciler(ctx context.Context, realm in
 		passwordField = realm.Spec.AuthSecret.PasswordField
 	}
 
-	tag := "latest"
+	var tag string
 	username, password, err := getSecret(ctx, r.Client, realm, usernameField, passwordField)
 	if err != nil {
 		return realm, ctrl.Result{}, err
