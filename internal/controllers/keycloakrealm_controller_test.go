@@ -164,6 +164,10 @@ var _ = Describe("KeycloakRealm controller", func() {
 					Value: "/realm/realm.json",
 				},
 				{
+					Name:  "IMPORT_CACHE_ENABLED",
+					Value: "false",
+				},
+				{
 					Name: "KEYCLOAK_USER",
 					ValueFrom: &corev1.EnvVarSource{
 						SecretKeyRef: &corev1.SecretKeySelector{
@@ -345,6 +349,10 @@ var _ = Describe("KeycloakRealm controller", func() {
 				{
 					Name:  "IMPORT_FILES_LOCATIONS",
 					Value: "/realm/realm.json",
+				},
+				{
+					Name:  "IMPORT_CACHE_ENABLED",
+					Value: "false",
 				},
 				{
 					Name: "KEYCLOAK_USER",
@@ -784,6 +792,10 @@ var _ = Describe("KeycloakRealm controller", func() {
 				{
 					Name:  "IMPORT_FILES_LOCATIONS",
 					Value: "/realm/realm.json",
+				},
+				{
+					Name:  "IMPORT_CACHE_ENABLED",
+					Value: "false",
 				},
 				{
 					Name: "KEYCLOAK_USER",
@@ -1431,6 +1443,10 @@ var _ = Describe("KeycloakRealm controller", func() {
 				{
 					Name:  "IMPORT_FILES_LOCATIONS",
 					Value: "/realm/realm.json",
+				},
+				{
+					Name:  "IMPORT_CACHE_ENABLED",
+					Value: "false",
 				},
 				{
 					Name: "KEYCLOAK_USER",

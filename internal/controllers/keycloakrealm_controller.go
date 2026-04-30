@@ -334,7 +334,7 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 	}
 
 	// rate limiter
-	if readyCondition != nil && readyCondition.Status == metav1.ConditionTrue && (realm.Spec.Interval == nil || time.Since(readyCondition.LastTransitionTime.Time) < realm.Spec.Interval.Duration) && checksum == realm.Status.ObservedSHA256 {
+	if readyCondition != nil && readyCondition.Status == metav1.ConditionTrue && (realm.Spec.Interval == nil || time.Since(readyCondition.LastTransitionTime.Time) < realm.Spec.Interval.Duration) {
 		logger.V(1).Info("skip reconciliation, last transition time too recent")
 
 		if realm.Spec.Interval != nil {
@@ -489,6 +489,10 @@ func (r *KeycloakRealmReconciler) createReconciler(ctx context.Context, realm in
 				{
 					Name:  "IMPORT_FILES_LOCATIONS",
 					Value: "/realm/realm.json",
+				},
+				{
+					Name:  "IMPORT_CACHE_ENABLED",
+					Value: "false",
 				},
 				{
 					Name: "KEYCLOAK_USER",
