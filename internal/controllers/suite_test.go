@@ -83,7 +83,7 @@ var _ = BeforeSuite(func() {
 		Client:   k8sManager.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("KeycloakRealm"),
 		Scheme:   k8sManager.GetScheme(),
-		Recorder: k8sManager.GetEventRecorderFor("KeycloakRealm"),
+		Recorder: k8sManager.GetEventRecorder("KeycloakRealm"),
 		HTTPClient: &http.Client{
 			Transport: &mockTransport{},
 		},

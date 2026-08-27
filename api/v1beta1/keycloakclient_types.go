@@ -23,7 +23,7 @@ type KeycloakClientList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&KeycloakClient{}, &KeycloakClientList{})
+	objectTypes = append(objectTypes, &KeycloakClient{}, &KeycloakClientList{})
 }
 
 // KeycloakClientSpec defines the desired state of KeycloakClient.

@@ -39,7 +39,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -60,7 +60,7 @@ import (
 // +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=keycloakrealms/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;update;patch;delete;watch;list
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;update;patch;delete;watch;list
-// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=events.k8s.io,resources=events,verbs=create;patch
 
 const (
 	secretIndexKey = ".metadata.secret"
@@ -71,7 +71,7 @@ type KeycloakRealmReconciler struct {
 	client.Client
 	Log                logr.Logger
 	Scheme             *runtime.Scheme
-	Recorder           record.EventRecorder
+	Recorder           events.EventRecorder
 	secretRegex        *regexp.Regexp
 	ReconcilerRegistry string
 	HTTPClient         *http.Client
@@ -216,7 +216,7 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if reconcileErr != nil {
 		logger.Error(err, "reconcile error occurred")
 		realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", reconcileErr.Error())
-		r.Recorder.Event(&realm, "Normal", "error", reconcileErr.Error())
+		r.Recorder.Eventf(&realm, nil, corev1.EventTypeNormal, "Error", "Reconcile", "failed to reconcile: %s", reconcileErr.Error())
 	}
 
 	// Update status after reconciliation.
@@ -371,8 +371,8 @@ func (r *KeycloakRealmReconciler) handlerReconcilerState(realm infrav1beta1.Keyc
 	case containerStatus.State.Terminated != nil && containerStatus.State.Terminated.ExitCode == 0:
 		logger.Info("reconciler pod succeeded", "pod-name", realm.Status.Reconciler)
 		realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionTrue, "ReconciliationSucceeded", fmt.Sprintf("reconciler %s terminated with code 0", realm.Status.Reconciler))
-		msg := "Realm successfully reconciled"
-		r.Recorder.Event(&realm, "Normal", "info", msg)
+		r.Recorder.Eventf(&realm, nil, corev1.EventTypeNormal, "Info", "Reconcile", fmt.Sprintf("reconciler %s terminated with code 0", realm.Status.Reconciler))
+
 		return realm, ctrl.Result{Requeue: true}, nil
 
 	case containerStatus.State.Terminated != nil:
@@ -385,7 +385,6 @@ func (r *KeycloakRealmReconciler) handlerReconcilerState(realm infrav1beta1.Keyc
 }
 
 func (r *KeycloakRealmReconciler) createReconciler(ctx context.Context, realm infrav1beta1.KeycloakRealm, raw string, checksum string, logger logr.Logger) (infrav1beta1.KeycloakRealm, ctrl.Result, error) {
-	r.Recorder.Event(&realm, "Normal", "info", "reconcile realm progressing")
 	realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionUnknown, "Progressing", "Reconciliation in progress")
 	realm = infrav1beta1.KeycloakRealmReconciling(realm, metav1.ConditionTrue, "Progressing", "")
 

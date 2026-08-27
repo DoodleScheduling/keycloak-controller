@@ -158,7 +158,7 @@ func main() {
 		Client:             mgr.GetClient(),
 		Log:                ctrl.Log.WithName("controllers").WithName("KeycloakRealm"),
 		Scheme:             mgr.GetScheme(),
-		Recorder:           mgr.GetEventRecorderFor("KeycloakRealm"),
+		Recorder:           mgr.GetEventRecorder("KeycloakRealm"),
 		ReconcilerRegistry: reconcilerRegistry,
 		HTTPClient:         httpClient,
 	}
