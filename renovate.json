@@ -1,5 +1,5 @@
 {
-  "extends": ["config:base", "github>whitesource/merge-confidence:beta", ":semanticCommitTypeAll(chore)"],
+  "extends": ["config:recommended", "github>whitesource/merge-confidence:beta", ":semanticCommitTypeAll(chore)"],
   "prHourlyLimit": 50,
   "prConcurrentLimit": 50, 
   "osvVulnerabilityAlerts": true,
@@ -27,5 +27,15 @@
   "postUpdateOptions": [
       "gomodUpdateImportPaths",
       "gomodTidy"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^Makefile$"],
+      "matchStrings": [
+        "go-install-tool,\\$\\([A-Z_]+\\),(?<depName>[^@\\s]+)@(?<currentValue>v[0-9.]+)"
+      ],
+      "datasourceTemplate": "go"
+    }
   ]
 }
