@@ -31,7 +31,7 @@
   "customManagers": [
     {
       "customType": "regex",
-      "managerFilePatterns": ["^Makefile$"],
+      "managerFilePatterns": ["/^Makefile$/"],
       "matchStrings": [
         "go-install-tool,\\$\\([A-Z_]+\\),(?<depName>[^@\\s]+)@(?<currentValue>v[0-9.]+)"
       ],
@@ -39,7 +39,7 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["^Makefile$"],
+      "managerFilePatterns": ["/^Makefile$/"],
       "matchStrings": [
         "go-install-tool,\\$\\([A-Z_]+\\),(?<depName>[^@\\s]+)@(?<currentValue>release-[0-9.]+)"
       ],
