@@ -31,11 +31,20 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["^Makefile$"],
+      "managerFilePatterns": ["^Makefile$"],
       "matchStrings": [
         "go-install-tool,\\$\\([A-Z_]+\\),(?<depName>[^@\\s]+)@(?<currentValue>v[0-9.]+)"
       ],
       "datasourceTemplate": "go"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^Makefile$"],
+      "matchStrings": [
+        "go-install-tool,\\$\\([A-Z_]+\\),(?<depName>[^@\\s]+)@(?<currentValue>release-[0-9.]+)"
+      ],
+      "datasourceTemplate": "go",
+      "versioningTemplate": "regex:^release-(?<major>\\d+)\\.(?<minor>\\d+)$"
     }
   ]
 }
