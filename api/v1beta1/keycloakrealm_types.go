@@ -47,7 +47,7 @@ type KeycloakRealmList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&KeycloakRealm{}, &KeycloakRealmList{})
+	objectTypes = append(objectTypes, &KeycloakRealm{}, &KeycloakRealmList{})
 }
 
 // KeycloakRealmSpec defines the desired state of KeycloakRealm
