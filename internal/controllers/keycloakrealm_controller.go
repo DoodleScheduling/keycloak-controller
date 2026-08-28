@@ -60,6 +60,7 @@ import (
 // +kubebuilder:rbac:groups=keycloak.infra.doodle.com,resources=keycloakrealms/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;update;patch;delete;watch;list
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;update;patch;delete;watch;list
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=events.k8s.io,resources=events,verbs=create;patch
 
 const (
@@ -216,7 +217,7 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if reconcileErr != nil {
 		logger.Error(err, "reconcile error occurred")
 		realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", reconcileErr.Error())
-		r.Recorder.Eventf(&realm, nil, corev1.EventTypeNormal, "Error", "Reconcile", "failed to reconcile: %s", reconcileErr.Error())
+		r.Recorder.Eventf(&realm, nil, corev1.EventTypeWarning, "Error", "Reconcile", "failed to reconcile: %s", reconcileErr.Error())
 	}
 
 	// Update status after reconciliation.
