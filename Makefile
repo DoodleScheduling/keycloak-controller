@@ -148,7 +148,7 @@ golangci-lint: ## Download golint locally if necessary
 KUSTOMIZE = $(GOBIN)/kustomize
 .PHONY: kustomize
 kustomize: ## Download kustomize locally if necessary.
-	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.7)
+	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v5.8.1)
 
 ENVTEST = $(GOBIN)/setup-envtest
 .PHONY: envtest
