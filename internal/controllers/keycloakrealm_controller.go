@@ -374,7 +374,7 @@ func (r *KeycloakRealmReconciler) handlerReconcilerState(realm infrav1beta1.Keyc
 		realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionTrue, "ReconciliationSucceeded", fmt.Sprintf("reconciler %s terminated with code 0", realm.Status.Reconciler))
 		r.Recorder.Eventf(&realm, nil, corev1.EventTypeNormal, "Info", "Reconcile", fmt.Sprintf("reconciler %s terminated with code 0", realm.Status.Reconciler))
 
-		return realm, ctrl.Result{Requeue: true}, nil
+		return realm, ctrl.Result{RequeueAfter: time.Millisecond}, nil
 
 	case containerStatus.State.Terminated != nil:
 		err := fmt.Errorf("reconciler terminated with code %d", containerStatus.State.Terminated.ExitCode)
