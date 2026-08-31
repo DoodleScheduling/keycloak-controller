@@ -319,19 +319,19 @@ func (r *KeycloakRealmReconciler) reconcile(ctx context.Context, realm infrav1be
 
 		realm.Status.Reconciler = ""
 		realm.Status.LastFailedRequests = nil
-		return realm, ctrl.Result{Requeue: true}, nil
+		return realm, ctrl.Result{RequeueAfter: time.Millisecond}, nil
 	}
 
 	// cleanup reconciler pod if stale
 	if needUpdate {
 		logger.V(1).Info("realm checksum changed, delete stale reconciler", "pod-name", realm.Status.Reconciler)
-		return realm, ctrl.Result{Requeue: true}, cleanup()
+		return realm, ctrl.Result{RequeueAfter: time.Millisecond}, cleanup()
 	}
 
 	// garbage collect reconciler pod
 	if progressingCondition != nil && readyCondition != nil && readyCondition.Status == metav1.ConditionTrue && podErr == nil && realm.Status.Reconciler != "" {
 		logger.V(1).Info("garbage collect reconciler pod", "pod-name", realm.Status.Reconciler)
-		return realm, ctrl.Result{Requeue: true}, cleanup()
+		return realm, ctrl.Result{RequeueAfter: time.Millisecond}, cleanup()
 	}
 
 	// rate limiter
