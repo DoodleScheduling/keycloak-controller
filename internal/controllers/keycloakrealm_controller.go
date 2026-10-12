@@ -215,7 +215,7 @@ func (r *KeycloakRealmReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	logger.Info("finished reconciling KeycloakRealm")
 
 	if reconcileErr != nil {
-		logger.Error(err, "reconcile error occurred")
+		logger.Error(reconcileErr, "reconcile error occurred")
 		realm = infrav1beta1.KeycloakRealmReady(realm, metav1.ConditionFalse, "ReconciliationFailed", reconcileErr.Error())
 		r.Recorder.Eventf(&realm, nil, corev1.EventTypeWarning, "Error", "Reconcile", "failed to reconcile: %s", reconcileErr.Error())
 	}
@@ -546,13 +546,22 @@ func (r *KeycloakRealmReconciler) createReconciler(ctx context.Context, realm in
 		return realm, ctrl.Result{}, err
 	}
 
+	// Failed creations are rolled back and the reconciler unlinked so the next run directly retries the creation.
 	logger.Info("creating new realm secret", "secret", secret.Name)
 	if err := r.Create(ctx, secret); err != nil {
+		realm.Status.Reconciler = ""
+		conditions.Delete(&realm, infrav1beta1.ConditionReconciling)
 		return realm, ctrl.Result{}, err
 	}
 
-	logger.Info("create new reconciler pod", "pod", template.Name, "previous", realm.Status.Reconciler)
+	logger.Info("create new reconciler pod", "pod", template.Name)
 	if err := r.Create(ctx, template); err != nil {
+		if delErr := r.Delete(ctx, secret); delErr != nil && !apierrors.IsNotFound(delErr) {
+			return realm, ctrl.Result{}, fmt.Errorf("%w; could not delete realm secret: %w", err, delErr)
+		}
+
+		realm.Status.Reconciler = ""
+		conditions.Delete(&realm, infrav1beta1.ConditionReconciling)
 		return realm, ctrl.Result{}, err
 	}
 
